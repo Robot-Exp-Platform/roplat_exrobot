@@ -1,0 +1,21 @@
+[package]
+name = "roplat_exrobot"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "roplat_exrobot"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+robot_behavior = { path = "crates/robot_behavior", version = "0.4.7" }
+nalgebra = { version = "0.33", features = ["serde-serialize"] }
+pyo3 = { version = "0.25", features = [
+    "extension-module",
+    "multiple-pymethods",
+], optional = true }
+
+[features]
+default = ["to_py"]
+ffi = []
+to_py = ["pyo3", "ffi", "robot_behavior/to_py"]
