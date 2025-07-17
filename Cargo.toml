@@ -2,6 +2,11 @@
 name = "roplat_exrobot"
 version = "0.1.0"
 edition = "2024"
+authors = ["Yixing <yanjizhou312@163.com>"]
+readme = "README.md"
+repository = "https://github.com/Robot-Exp-Platform/roplat_exrobot"
+license = "Apache-2.0"
+description = "a example robot behavior library for robot_behavior"
 
 [lib]
 name = "roplat_exrobot"
