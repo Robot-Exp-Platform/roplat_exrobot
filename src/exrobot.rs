@@ -1,11 +1,11 @@
+use nalgebra as na;
+use robot_behavior::{
+    ArmState, ControlType, Coord, LoadState, MotionType, Pose, RobotResult, behavior::*,
+};
 use std::{
     sync::{Arc, Mutex},
     thread,
     time::Duration,
-};
-
-use robot_behavior::{
-    ArmState, ControlType, Coord, LoadState, MotionType, Pose, RobotResult, behavior::*,
 };
 
 #[derive(Default)]
@@ -261,9 +261,9 @@ impl<const N: usize> ArmStreamingMotionExt<N> for ExRobot<N> {
         println!("ExRobot<{N}> move_cartesian_vel_target");
         Arc::new(Mutex::new(Some([0.0; 6])))
     }
-    fn move_cartesian_quat_target(&mut self) -> Arc<Mutex<Option<nalgebra::Isometry3<f64>>>> {
+    fn move_cartesian_quat_target(&mut self) -> Arc<Mutex<Option<na::Isometry3<f64>>>> {
         println!("ExRobot<{N}> move_cartesian_quat_target");
-        Arc::new(Mutex::new(Some(nalgebra::Isometry3::identity())))
+        Arc::new(Mutex::new(Some(na::Isometry3::identity())))
     }
     fn move_cartesian_homo_target(&mut self) -> Arc<Mutex<Option<[f64; 16]>>> {
         println!("ExRobot<{N}> move_cartesian_homo_target");

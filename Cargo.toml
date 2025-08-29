@@ -13,12 +13,12 @@ name = "roplat_exrobot"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-robot_behavior = { path = "crates/robot_behavior", version = "0.4.7" }
-nalgebra = { version = "0.33", features = ["serde-serialize"] }
-pyo3 = { version = "0.25", features = [
+pyo3 = { version = "0.25", optional = true, features = [
     "extension-module",
     "multiple-pymethods",
-], optional = true }
+] }
+robot_behavior = { path = "../robot_behavior", version = "0.4.7" }
+nalgebra = { version = "0.34", features = ["serde-serialize"] }
 
 [features]
 default = ["to_py"]
