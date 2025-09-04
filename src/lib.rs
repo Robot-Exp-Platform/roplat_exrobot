@@ -4,6 +4,7 @@ pub mod to_py;
 
 pub use exrobot::{ExRobot, ExStreamHandle};
 
+#[cfg(feature = "to_py")]
 #[pyo3::pymodule]
 mod roplat_exrobot {
     #[pymodule_export]

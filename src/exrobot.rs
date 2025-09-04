@@ -1,6 +1,6 @@
 use nalgebra as na;
 use robot_behavior::{
-    ArmState, ControlType, Coord, LoadState, MotionType, Pose, RobotResult, behavior::*,
+    ArmState, ControlType, Coord, LoadState, MotionType, Pose, Realtime, RobotResult, behavior::*,
 };
 use std::{
     sync::{Arc, Mutex},
@@ -201,17 +201,17 @@ impl<const N: usize> ArmPreplannedMotion<N> for ExRobot<N> {
 }
 
 impl<const N: usize> ArmStreamingHandle<N> for ExStreamHandle<N> {
-    fn last_motion(&self) -> RobotResult<MotionType<N>> {
+    fn last_motion(&self) -> Option<MotionType<N>> {
         println!("ExStreamHandle<{N}> last_motion");
-        Ok(MotionType::Joint([0.0; N]))
+        Some(MotionType::Joint([0.0; N]))
     }
     fn move_to(&mut self, target: MotionType<N>) -> RobotResult<()> {
         println!("ExStreamHandle<{N}> move_to: {target:?}");
         Ok(())
     }
-    fn last_control(&self) -> RobotResult<ControlType<N>> {
+    fn last_control(&self) -> Option<ControlType<N>> {
         println!("ExStreamHandle<{N}> last_control");
-        Ok(ControlType::Torque([0.0; N]))
+        Some(ControlType::Torque([0.0; N]))
     }
     fn control_with(&mut self, control: ControlType<N>) -> RobotResult<()> {
         println!("ExStreamHandle<{N}> control_with: {control:?}");
@@ -278,6 +278,8 @@ impl<const N: usize> ArmStreamingMotionExt<N> for ExRobot<N> {
         Arc::new(Mutex::new(Some([0.0; N])))
     }
 }
+
+impl<const N: usize> Realtime for ExRobot<N> {}
 
 impl<const N: usize> ArmRealtimeControl<N> for ExRobot<N> {
     fn move_with_closure<FM>(&mut self, mut closure: FM) -> RobotResult<()>
