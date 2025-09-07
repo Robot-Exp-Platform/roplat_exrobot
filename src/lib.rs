@@ -1,8 +1,10 @@
 pub mod exrobot;
+#[cfg(feature = "to_cxx")]
+pub mod to_cxx;
 #[cfg(feature = "to_py")]
 pub mod to_py;
 
-pub use exrobot::{ExRobot, ExStreamHandle};
+pub use exrobot::{ExRobot, ExRobotHandle};
 
 #[cfg(feature = "to_py")]
 #[pyo3::pymodule]

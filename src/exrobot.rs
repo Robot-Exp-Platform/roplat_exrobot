@@ -11,7 +11,7 @@ use std::{
 #[derive(Default)]
 pub struct ExRobot<const N: usize>;
 #[derive(Default)]
-pub struct ExStreamHandle<const N: usize>;
+pub struct ExRobotHandle<const N: usize>;
 
 impl<const N: usize> ExRobot<N> {
     pub fn new() -> Self {
@@ -162,6 +162,7 @@ impl<const N: usize> ArmParam<N> for ExRobot<N> {
 impl<const N: usize> ArmPreplannedMotionImpl<N> for ExRobot<N> {
     fn move_joint(&mut self, target: &[f64; N]) -> RobotResult<()> {
         println!("ExRobot<{N}> move_joint: {target:?}");
+        print!("    ");
         self.move_joint_async(target)
     }
 
@@ -172,6 +173,7 @@ impl<const N: usize> ArmPreplannedMotionImpl<N> for ExRobot<N> {
 
     fn move_cartesian(&mut self, target: &Pose) -> RobotResult<()> {
         println!("ExRobot<{N}> move_cartesian: {target:?}");
+        print!("    ");
         self.move_cartesian_async(target)
     }
 
@@ -200,30 +202,30 @@ impl<const N: usize> ArmPreplannedMotion<N> for ExRobot<N> {
     }
 }
 
-impl<const N: usize> ArmStreamingHandle<N> for ExStreamHandle<N> {
+impl<const N: usize> ArmStreamingHandle<N> for ExRobotHandle<N> {
     fn last_motion(&self) -> Option<MotionType<N>> {
-        println!("ExStreamHandle<{N}> last_motion");
+        println!("ExRobotHandle<{N}> last_motion");
         Some(MotionType::Joint([0.0; N]))
     }
     fn move_to(&mut self, target: MotionType<N>) -> RobotResult<()> {
-        println!("ExStreamHandle<{N}> move_to: {target:?}");
+        println!("ExRobotHandle<{N}> move_to: {target:?}");
         Ok(())
     }
     fn last_control(&self) -> Option<ControlType<N>> {
-        println!("ExStreamHandle<{N}> last_control");
+        println!("ExRobotHandle<{N}> last_control");
         Some(ControlType::Torque([0.0; N]))
     }
     fn control_with(&mut self, control: ControlType<N>) -> RobotResult<()> {
-        println!("ExStreamHandle<{N}> control_with: {control:?}");
+        println!("ExRobotHandle<{N}> control_with: {control:?}");
         Ok(())
     }
 }
 
 impl<const N: usize> ArmStreamingMotion<N> for ExRobot<N> {
-    type Handle = ExStreamHandle<N>;
+    type Handle = ExRobotHandle<N>;
     fn start_streaming(&mut self) -> RobotResult<Self::Handle> {
         println!("ExRobot<{N}> start_streaming");
-        Ok(ExStreamHandle::<N>)
+        Ok(ExRobotHandle::<N>)
     }
     fn end_streaming(&mut self) -> RobotResult<()> {
         println!("ExRobot<{N}> end_streaming");
