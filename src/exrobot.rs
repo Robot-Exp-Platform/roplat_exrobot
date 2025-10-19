@@ -19,7 +19,16 @@ impl<const N: usize> ExRobot<N> {
     }
 }
 
-impl<const N: usize> RobotBehavior for ExRobot<N> {
+impl<const N: usize> RobotFile for ExRobot<N> {
+    fn urdf_collision_file() -> &'static str {
+        "exrobot_collision.urdf"
+    }
+    fn urdf_visual_file() -> &'static str {
+        "exrobot_visual.urdf"
+    }
+}
+
+impl<const N: usize> Robot for ExRobot<N> {
     type State = String;
 
     fn version() -> String {
@@ -87,7 +96,7 @@ impl<const N: usize> RobotBehavior for ExRobot<N> {
     }
 }
 
-impl<const N: usize> ArmBehavior<N> for ExRobot<N> {
+impl<const N: usize> Arm<N> for ExRobot<N> {
     fn state(&mut self) -> RobotResult<ArmState<N>> {
         println!("ExRobot<{N}> state");
         Ok(ArmState::default())
