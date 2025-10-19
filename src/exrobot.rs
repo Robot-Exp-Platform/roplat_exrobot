@@ -20,12 +20,7 @@ impl<const N: usize> ExRobot<N> {
 }
 
 impl<const N: usize> RobotFile for ExRobot<N> {
-    fn urdf_collision_file() -> &'static str {
-        "exrobot_collision.urdf"
-    }
-    fn urdf_visual_file() -> &'static str {
-        "exrobot_visual.urdf"
-    }
+    const URDF: &'static str = "";
 }
 
 impl<const N: usize> Robot for ExRobot<N> {
