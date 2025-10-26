@@ -351,7 +351,7 @@ mod test {
         robot.enable()?;
         robot.disable()?;
         robot.reset()?;
-        assert_eq!(robot.is_moving(), false);
+        assert!(!robot.is_moving());
         robot.stop()?;
         robot.pause()?;
         robot.resume()?;
@@ -387,7 +387,7 @@ mod test {
     }
 
     #[test]
-    fn arm_param() -> RobotResult<()> {
+    fn arm_param() {
         let identity = na::Isometry3::identity();
         assert_eq!(
             ExRobot::<0>::forward_kinematics(&[0.; 0]),
@@ -421,7 +421,6 @@ mod test {
             ExRobot::<7>::forward_kinematics(&[0.; 7]),
             Pose::Quat(identity)
         );
-        Ok(())
     }
 
     #[test]
