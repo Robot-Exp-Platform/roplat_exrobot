@@ -1,6 +1,7 @@
 use nalgebra as na;
 use robot_behavior::{
-    ArmState, ControlType, Coord, LoadState, MotionType, Pose, Realtime, RobotResult, behavior::*,
+    ArmState, ControlType, Coord, DhParam, LoadState, MotionType, Pose, Realtime, RobotResult,
+    behavior::*, dh_param,
 };
 use std::{
     sync::{Arc, Mutex},
@@ -158,9 +159,15 @@ impl<const N: usize> Arm<N> for ExRobot<N> {
 }
 
 impl<const N: usize> ArmParam<N> for ExRobot<N> {
-    const DH: [[f64; 4]; N] = [[0.0; 4]; N];
     const JOINT_MIN: [f64; N] = [0.0; N];
     const JOINT_MAX: [f64; N] = [1.0; N];
+}
+
+impl<const N: usize> ArmForwardKinematics<N> for ExRobot<N>
+where
+    [(); N + 1]:,
+{
+    const DH: [DhParam; N] = [dh_param!(0., 0., 0., 0.); N];
 }
 
 impl<const N: usize> ArmPreplannedMotionImpl<N> for ExRobot<N> {
@@ -365,11 +372,7 @@ mod test {
     fn arm_behavior() -> RobotResult<()> {
         let mut robot = ExRobot::<6>::new();
 
-        robot.set_load(LoadState {
-            m: 0.,
-            x: [0.; 3],
-            i: [0.; 9],
-        })?;
+        robot.set_load(LoadState { m: 0., x: [0.; 3], i: [0.; 9] })?;
         robot.set_coord(Coord::OCS)?;
         robot.with_coord(Coord::OCS);
         robot.set_speed(1.0)?;
@@ -389,38 +392,14 @@ mod test {
     #[test]
     fn arm_param() {
         let identity = na::Isometry3::identity();
-        assert_eq!(
-            ExRobot::<0>::forward_kinematics(&[0.; 0]),
-            Pose::Quat(identity)
-        );
-        assert_eq!(
-            ExRobot::<1>::forward_kinematics(&[0.; 1]),
-            Pose::Quat(identity)
-        );
-        assert_eq!(
-            ExRobot::<2>::forward_kinematics(&[0.; 2]),
-            Pose::Quat(identity)
-        );
-        assert_eq!(
-            ExRobot::<3>::forward_kinematics(&[0.; 3]),
-            Pose::Quat(identity)
-        );
-        assert_eq!(
-            ExRobot::<4>::forward_kinematics(&[0.; 4]),
-            Pose::Quat(identity)
-        );
-        assert_eq!(
-            ExRobot::<5>::forward_kinematics(&[0.; 5]),
-            Pose::Quat(identity)
-        );
-        assert_eq!(
-            ExRobot::<6>::forward_kinematics(&[0.; 6]),
-            Pose::Quat(identity)
-        );
-        assert_eq!(
-            ExRobot::<7>::forward_kinematics(&[0.; 7]),
-            Pose::Quat(identity)
-        );
+        assert_eq!(ExRobot::<0>::fk_end_pose(&[0.; 0]), Pose::Quat(identity));
+        assert_eq!(ExRobot::<1>::fk_end_pose(&[0.; 1]), Pose::Quat(identity));
+        assert_eq!(ExRobot::<2>::fk_end_pose(&[0.; 2]), Pose::Quat(identity));
+        assert_eq!(ExRobot::<3>::fk_end_pose(&[0.; 3]), Pose::Quat(identity));
+        assert_eq!(ExRobot::<4>::fk_end_pose(&[0.; 4]), Pose::Quat(identity));
+        assert_eq!(ExRobot::<5>::fk_end_pose(&[0.; 5]), Pose::Quat(identity));
+        assert_eq!(ExRobot::<6>::fk_end_pose(&[0.; 6]), Pose::Quat(identity));
+        assert_eq!(ExRobot::<7>::fk_end_pose(&[0.; 7]), Pose::Quat(identity));
     }
 
     #[test]
