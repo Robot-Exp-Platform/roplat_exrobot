@@ -1,7 +1,7 @@
 use nalgebra as na;
 use robot_behavior::{
-    ArmState, ControlType, Coord, DhParam, LoadState, MotionType, Pose, Realtime, RobotResult,
-    behavior::*, dh_param,
+    ArmPreplannedPath, ArmState, ControlType, Coord, DhParam, LoadState, MotionType, Pose,
+    Realtime, RobotResult, behavior::*, dh_param,
 };
 use std::{
     sync::{Arc, Mutex},
@@ -170,7 +170,7 @@ where
     const DH: [DhParam; N] = [dh_param!(0., 0., 0., 0.); N];
 }
 
-impl<const N: usize> ArmPreplannedMotionImpl<N> for ExRobot<N> {
+impl<const N: usize> ArmPreplannedMotion<N> for ExRobot<N> {
     fn move_joint(&mut self, target: &[f64; N]) -> RobotResult<()> {
         println!("ExRobot<{N}> move_joint: {target:?}");
         print!("    ");
@@ -194,21 +194,31 @@ impl<const N: usize> ArmPreplannedMotionImpl<N> for ExRobot<N> {
     }
 }
 
-impl<const N: usize> ArmPreplannedMotion<N> for ExRobot<N> {
-    fn move_path(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_path: {path:?}");
-        self.move_path_async(path)
-    }
-    fn move_path_async(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_path_async: {path:?}");
+impl<const N: usize> ArmPreplannedPath<N> for ExRobot<N> {
+    fn move_traj(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_traj: {path:?}");
+        self.move_traj_async(path)?;
         Ok(())
     }
-    fn move_path_start(&mut self, start: MotionType<N>) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_path_start: {start:?}");
+    fn move_traj_async(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_traj_async: {path:?}");
         Ok(())
     }
-    fn move_path_prepare(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_path_prepare: {path:?}");
+
+    fn move_waypoints(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_waypoints: {path:?}");
+        self.move_waypoints_async(path)
+    }
+    fn move_waypoints_async(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_waypoints_async: {path:?}");
+        Ok(())
+    }
+    fn move_waypoints_start(&mut self, start: MotionType<N>) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_waypoints_start: {start:?}");
+        Ok(())
+    }
+    fn move_waypoints_prepare(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_waypoints_prepare: {path:?}");
         Ok(())
     }
 }
@@ -415,8 +425,10 @@ mod test {
         robot.move_rel_async(MotionType::Joint([0.0; 6]))?;
         robot.move_int(MotionType::Joint([0.0; 6]))?;
         robot.move_int_async(MotionType::Joint([0.0; 6]))?;
-        robot.move_path(vec![MotionType::Joint([0.0; 6]); 6])?;
-        robot.move_path_async(vec![MotionType::Joint([0.0; 6]); 6])?;
+        robot.move_traj(vec![MotionType::Joint([0.0; 6]); 6])?;
+        robot.move_traj_async(vec![MotionType::Joint([0.0; 6]); 6])?;
+        robot.move_waypoints(vec![MotionType::Joint([0.0; 6]); 6])?;
+        robot.move_waypoints_async(vec![MotionType::Joint([0.0; 6]); 6])?;
         Ok(())
     }
 
