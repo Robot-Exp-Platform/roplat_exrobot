@@ -1,6 +1,6 @@
 [package]
 name = "roplat_exrobot"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["Yixing <yanjizhou312@163.com>"]
 readme = "README.md"
@@ -13,7 +13,7 @@ name = "roplat_exrobot"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-robot_behavior = "0.5.0"
+robot_behavior = "0.5.1"
 pyo3 = { version = "0.26", optional = true, features = [
     "extension-module",
     "multiple-pymethods",
