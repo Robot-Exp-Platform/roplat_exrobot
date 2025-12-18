@@ -56,9 +56,14 @@ impl<const N: usize> Robot for ExRobot<N> {
         Ok(())
     }
 
-    fn is_moving(&mut self) -> bool {
+    fn is_moving(&mut self) -> RobotResult<bool> {
         println!("ExRobot<{N}> is_moving");
-        false
+        Ok(false)
+    }
+
+    fn waiting_for_finish(&mut self) -> RobotResult<()> {
+        println!("ExRobot<{N}> waiting for finish");
+        Ok(())
     }
 
     fn stop(&mut self) -> RobotResult<()> {
@@ -111,12 +116,12 @@ impl<const N: usize> Arm<N> for ExRobot<N> {
         self
     }
 
-    fn set_speed(&mut self, speed: f64) -> RobotResult<()> {
-        println!("ExRobot<{N}> set_speed: {speed}");
+    fn set_scale(&mut self, scale: f64) -> RobotResult<()> {
+        println!("ExRobot<{N}> set_scale: {scale}");
         Ok(())
     }
-    fn with_speed(&mut self, speed: f64) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_speed: {speed}");
+    fn with_scale(&mut self, scale: f64) -> &mut Self {
+        println!("\t| ExRobot<{N}> with_scale: {scale}");
         self
     }
 
@@ -368,7 +373,7 @@ mod test {
         robot.enable()?;
         robot.disable()?;
         robot.reset()?;
-        assert!(!robot.is_moving());
+        assert!(!robot.is_moving()?);
         robot.stop()?;
         robot.pause()?;
         robot.resume()?;
@@ -385,8 +390,8 @@ mod test {
         robot.set_load(LoadState { m: 0., x: [0.; 3], i: [0.; 9] })?;
         robot.set_coord(Coord::OCS)?;
         robot.with_coord(Coord::OCS);
-        robot.set_speed(1.0)?;
-        robot.with_speed(1.0);
+        robot.set_scale(1.0)?;
+        robot.with_scale(1.0);
         robot.with_velocity(&[0.0; 6]);
         robot.with_acceleration(&[0.0; 6]);
         robot.with_jerk(&[0.0; 6]);
