@@ -164,6 +164,7 @@ impl<const N: usize> Arm<N> for ExRobot<N> {
 }
 
 impl<const N: usize> ArmParam<N> for ExRobot<N> {
+    const CONTROL_PERIOD: f64 = 1.0;
     const JOINT_MIN: [f64; N] = [0.0; N];
     const JOINT_MAX: [f64; N] = [1.0; N];
 }
