@@ -1,18 +1,28 @@
-use nalgebra as na;
 use robot_behavior::{
-    ArmPreplannedPath, ArmState, ControlType, Coord, DhParam, LoadState, MotionType, Pose,
-    Realtime, RobotResult, behavior::*, dh_param,
+    Arm, ArmState, ArmTorqueControl, BalanceControl, BasePoseSpace, BaseState, BaseVelocityControl,
+    BaseVelocitySpace, CartesianPoseControl, CartesianVelocityControl, CenterOfMassSpace,
+    ControlWith, EndPoint, FlangeSpace, FootSpace, GaitCommand, GaitSpace, HandSpace, Humanoid,
+    HumanoidState, JointPositionControl, JointSpace, JointState, JointVelocityControl, Joints,
+    LoadState, MobileBase, MobileBaseState, MoveTo, MoveTraj, Pose, Quadruped, QuadrupedState,
+    Robot, RobotDescription, RobotResult, TorqueControl, WholeBodyJointSpace, WholeBodyTorqueSpace,
+    WholeBodyVelocitySpace,
 };
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-    time::Duration,
-};
+use std::{thread, time::Duration};
 
 #[derive(Default)]
 pub struct ExRobot<const N: usize>;
+
 #[derive(Default)]
 pub struct ExRobotHandle<const N: usize>;
+
+#[derive(Default)]
+pub struct ExMobileBase;
+
+#[derive(Default)]
+pub struct ExQuadruped<const N: usize>;
+
+#[derive(Default)]
+pub struct ExHumanoid<const N: usize>;
 
 impl<const N: usize> ExRobot<N> {
     pub fn new() -> Self {
@@ -20,12 +30,79 @@ impl<const N: usize> ExRobot<N> {
     }
 }
 
-impl<const N: usize> RobotFile for ExRobot<N> {
-    const URDF: &'static str = "";
+impl ExMobileBase {
+    pub fn new() -> Self {
+        ExMobileBase
+    }
+}
+
+impl<const N: usize> ExQuadruped<N> {
+    pub fn new() -> Self {
+        ExQuadruped
+    }
+}
+
+impl<const N: usize> ExHumanoid<N> {
+    pub fn new() -> Self {
+        ExHumanoid
+    }
+}
+
+fn hold_joint_position<const N: usize>(state: &JointState<N>) -> [f64; N] {
+    state
+        .cmd
+        .q
+        .or(state.des.q)
+        .or(state.meas.q)
+        .unwrap_or([0.0; N])
+}
+
+fn hold_joint_velocity<const N: usize>(_state: &JointState<N>) -> [f64; N] {
+    [0.0; N]
+}
+
+fn hold_joint_torque<const N: usize>(state: &JointState<N>) -> [f64; N] {
+    state
+        .cmd
+        .tau
+        .or(state.des.tau)
+        .or(state.meas.tau)
+        .unwrap_or([0.0; N])
+}
+
+fn hold_arm_pose<const N: usize>(state: &ArmState<N>) -> Pose {
+    state
+        .flange
+        .cmd
+        .pose
+        .or(state.flange.des.pose)
+        .or(state.flange.meas.pose)
+        .unwrap_or_default()
+}
+
+fn hold_base_velocity(_state: &BaseState) -> [f64; 6] {
+    [0.0; 6]
+}
+
+impl<const N: usize> RobotDescription for ExRobot<N> {
+    const URDF: Option<&'static str> = Some("");
+}
+
+impl RobotDescription for ExMobileBase {
+    const URDF: Option<&'static str> = Some("");
+}
+
+impl<const N: usize> RobotDescription for ExQuadruped<N> {
+    const URDF: Option<&'static str> = Some("");
+}
+
+impl<const N: usize> RobotDescription for ExHumanoid<N> {
+    const URDF: Option<&'static str> = Some("");
 }
 
 impl<const N: usize> Robot for ExRobot<N> {
     type State = String;
+    const CONTROL_PERIOD: f64 = 1.0;
 
     fn version() -> String {
         env!("CARGO_PKG_VERSION").to_string()
@@ -62,7 +139,7 @@ impl<const N: usize> Robot for ExRobot<N> {
     }
 
     fn waiting_for_finish(&mut self) -> RobotResult<()> {
-        println!("ExRobot<{N}> waiting for finish");
+        println!("ExRobot<{N}> waiting_for_finish");
         Ok(())
     }
 
@@ -97,6 +174,18 @@ impl<const N: usize> Robot for ExRobot<N> {
     }
 }
 
+impl<const N: usize> Joints<N> for ExRobot<N> {
+    const JOINT_MIN: [f64; N] = [0.0; N];
+    const JOINT_MAX: [f64; N] = [1.0; N];
+}
+
+impl<const N: usize> EndPoint for ExRobot<N> {
+    const CARTESIAN_VEL_BOUND: f64 = 1.0;
+    const CARTESIAN_ACC_BOUND: f64 = 1.0;
+    const ROTATION_VEL_BOUND: f64 = 1.0;
+    const ROTATION_ACC_BOUND: f64 = 1.0;
+}
+
 impl<const N: usize> Arm<N> for ExRobot<N> {
     fn state(&mut self) -> RobotResult<ArmState<N>> {
         println!("ExRobot<{N}> state");
@@ -107,347 +196,678 @@ impl<const N: usize> Arm<N> for ExRobot<N> {
         println!("ExRobot<{N}> set_load: {load:?}");
         Ok(())
     }
-    fn set_coord(&mut self, coord: Coord) -> RobotResult<()> {
-        println!("ExRobot<{N}> set_coord: {coord:?}");
-        Ok(())
+
+    fn get_joint(&self) -> [f64; N] {
+        [0.; N]
     }
-    fn with_coord(&mut self, coord: Coord) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_coord: {coord:?}");
+
+    fn get_endpoint(&self) -> Pose {
+        Pose::default()
+    }
+
+    fn with_joint_vel(self, joint_vel: [f64; N]) -> Self {
+        println!("ExRobot<{N}> with_joint_vel: {joint_vel:?}");
         self
     }
 
-    fn set_scale(&mut self, scale: f64) -> RobotResult<()> {
-        println!("ExRobot<{N}> set_scale: {scale}");
-        Ok(())
-    }
-    fn with_scale(&mut self, scale: f64) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_scale: {scale}");
+    fn with_joint_acc(self, joint_acc: [f64; N]) -> Self {
+        println!("ExRobot<{N}> with_joint_acc: {joint_acc:?}");
         self
     }
 
-    fn with_velocity(&mut self, joint_vel: &[f64; N]) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_velocity: {joint_vel:?}");
+    fn with_joint_jerk(self, joint_jerk: [f64; N]) -> Self {
+        println!("ExRobot<{N}> with_joint_jerk: {joint_jerk:?}");
         self
     }
-    fn with_acceleration(&mut self, joint_acc: &[f64; N]) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_acceleration: {joint_acc:?}");
+
+    fn with_torque(self, torque: [f64; N]) -> Self {
+        println!("ExRobot<{N}> with_torque: {torque:?}");
         self
     }
-    fn with_jerk(&mut self, joint_jerk: &[f64; N]) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_jerk: {joint_jerk:?}");
+
+    fn with_torque_dot(self, torque_dot: [f64; N]) -> Self {
+        println!("ExRobot<{N}> with_torque_dot: {torque_dot:?}");
         self
     }
-    fn with_cartesian_velocity(&mut self, cartesian_vel: f64) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_cartesian_velocity: {cartesian_vel}");
+
+    fn with_cartesian_vel(self, cartesian_vel: f64) -> Self {
+        println!("ExRobot<{N}> with_cartesian_vel: {cartesian_vel}");
         self
     }
-    fn with_cartesian_acceleration(&mut self, cartesian_acc: f64) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_cartesian_acceleration: {cartesian_acc}");
+
+    fn with_cartesian_acc(self, cartesian_acc: f64) -> Self {
+        println!("ExRobot<{N}> with_cartesian_acc: {cartesian_acc}");
         self
     }
-    fn with_cartesian_jerk(&mut self, cartesian_jerk: f64) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_cartesian_jerk: {cartesian_jerk}");
+
+    fn with_cartesian_jerk(self, cartesian_jerk: f64) -> Self {
+        println!("ExRobot<{N}> with_cartesian_jerk: {cartesian_jerk}");
         self
     }
-    fn with_rotation_velocity(&mut self, rotation_vel: f64) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_rotation_velocity: {rotation_vel}");
+
+    fn with_rotation_vel(self, rotation_vel: f64) -> Self {
+        println!("ExRobot<{N}> with_rotation_vel: {rotation_vel}");
         self
     }
-    fn with_rotation_acceleration(&mut self, rotation_acc: f64) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_rotation_acceleration: {rotation_acc}");
+
+    fn with_rotation_acc(self, rotation_acc: f64) -> Self {
+        println!("ExRobot<{N}> with_rotation_acc: {rotation_acc}");
         self
     }
-    fn with_rotation_jerk(&mut self, rotation_jerk: f64) -> &mut Self {
-        println!("\t| ExRobot<{N}> with_rotation_jerk: {rotation_jerk}");
+
+    fn with_rotation_jerk(self, rotation_jerk: f64) -> Self {
+        println!("ExRobot<{N}> with_rotation_jerk: {rotation_jerk}");
         self
     }
 }
 
-impl<const N: usize> ArmParam<N> for ExRobot<N> {
-    const CONTROL_PERIOD: f64 = 1.0;
-    const JOINT_MIN: [f64; N] = [0.0; N];
+impl<const N: usize> MoveTo<JointSpace<N>> for ExRobot<N> {
+    fn move_to(&mut self, target: [f64; N]) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_to joint: {target:?}");
+        Ok(())
+    }
+}
+
+impl<const N: usize> MoveTo<FlangeSpace> for ExRobot<N> {
+    fn move_to(&mut self, target: Pose) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_to flange: {target:?}");
+        Ok(())
+    }
+}
+
+impl<const N: usize> MoveTraj<JointSpace<N>> for ExRobot<N> {
+    fn move_traj(&mut self, traj: Vec<[f64; N]>) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_traj joint: {traj:?}");
+        Ok(())
+    }
+
+    fn move_path<F>(&mut self, _path: F) -> RobotResult<()>
+    where
+        F: Fn(f64) -> Option<[f64; N]>,
+    {
+        println!("ExRobot<{N}> move_path joint");
+        Ok(())
+    }
+
+    fn move_waypoints(&mut self, waypoints: Vec<[f64; N]>) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_waypoints joint: {waypoints:?}");
+        Ok(())
+    }
+}
+
+impl<const N: usize> MoveTraj<FlangeSpace> for ExRobot<N> {
+    fn move_traj(&mut self, traj: Vec<Pose>) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_traj flange: {traj:?}");
+        Ok(())
+    }
+
+    fn move_path<F>(&mut self, _path: F) -> RobotResult<()>
+    where
+        F: Fn(f64) -> Option<Pose>,
+    {
+        println!("ExRobot<{N}> move_path flange");
+        Ok(())
+    }
+
+    fn move_waypoints(&mut self, waypoints: Vec<Pose>) -> RobotResult<()> {
+        println!("ExRobot<{N}> move_waypoints flange: {waypoints:?}");
+        Ok(())
+    }
+}
+
+fn spawn_realtime_loop<const N: usize, C, F>(mut closure: F, label: &'static str)
+where
+    C: std::fmt::Debug + Send + 'static,
+    F: FnMut(ArmState<N>, Duration) -> (C, bool) + Send + 'static,
+{
+    println!("ExRobot<{N}> {label}");
+    thread::spawn(move || {
+        let mut duration = Duration::from_secs(0);
+        loop {
+            let (command, finished) = closure(ArmState::default(), duration);
+            println!("\t| {duration:?} | command: {command:?}, finished: {finished}");
+            if finished {
+                break;
+            }
+            duration += Duration::from_millis(100);
+        }
+    });
+}
+
+fn spawn_state_realtime_loop<O, C, F>(mut closure: F, label: &'static str, obs: O)
+where
+    O: Clone + Send + 'static,
+    C: std::fmt::Debug + Send + 'static,
+    F: FnMut(O, Duration) -> (C, bool) + Send + 'static,
+{
+    println!("{label}");
+    thread::spawn(move || {
+        let mut duration = Duration::from_secs(0);
+        loop {
+            let (command, finished) = closure(obs.clone(), duration);
+            println!("\t| {duration:?} | command: {command:?}, finished: {finished}");
+            if finished {
+                break;
+            }
+            duration += Duration::from_millis(100);
+        }
+    });
+}
+
+impl<const N: usize> ControlWith<TorqueControl<N>> for ExRobot<N> {
+    fn hold_command(state: &JointState<N>) -> [f64; N] {
+        hold_joint_torque(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(closure, "torque_control", JointState::default());
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<ArmTorqueControl<N>> for ExRobot<N> {
+    fn hold_command(state: &ArmState<N>) -> [f64; N] {
+        hold_joint_torque(&state.joint)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(ArmState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+    {
+        spawn_realtime_loop(closure, "arm_torque_control");
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<JointPositionControl<N>> for ExRobot<N> {
+    fn hold_command(state: &JointState<N>) -> [f64; N] {
+        hold_joint_position(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(closure, "joint_position_control", JointState::default());
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<JointVelocityControl<N>> for ExRobot<N> {
+    fn hold_command(state: &JointState<N>) -> [f64; N] {
+        hold_joint_velocity(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(closure, "joint_velocity_control", JointState::default());
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<CartesianVelocityControl<N>> for ExRobot<N> {
+    fn hold_command(_state: &ArmState<N>) -> [f64; 6] {
+        [0.; 6]
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(ArmState<N>, Duration) -> ([f64; 6], bool) + Send + 'static,
+    {
+        spawn_realtime_loop(closure, "cartesian_velocity_control");
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<CartesianPoseControl<N>> for ExRobot<N> {
+    fn hold_command(state: &ArmState<N>) -> Pose {
+        hold_arm_pose(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(ArmState<N>, Duration) -> (Pose, bool) + Send + 'static,
+    {
+        spawn_realtime_loop(closure, "cartesian_pose_control");
+        Ok(())
+    }
+}
+
+impl Robot for ExMobileBase {
+    type State = MobileBaseState;
+    const CONTROL_PERIOD: f64 = 0.01;
+
+    fn version() -> String {
+        format!("ExMobileBase v{}", env!("CARGO_PKG_VERSION"))
+    }
+
+    fn read_state(&mut self) -> RobotResult<Self::State> {
+        println!("ExMobileBase read_state");
+        Ok(MobileBaseState::default())
+    }
+}
+
+impl MobileBase for ExMobileBase {
+    fn base_state(&mut self) -> RobotResult<BaseState> {
+        println!("ExMobileBase base_state");
+        Ok(BaseState::default())
+    }
+}
+
+impl MoveTo<BasePoseSpace> for ExMobileBase {
+    fn move_to(&mut self, target: Pose) -> RobotResult<()> {
+        println!("ExMobileBase move_to base pose: {target:?}");
+        Ok(())
+    }
+}
+
+impl MoveTraj<BasePoseSpace> for ExMobileBase {
+    fn move_traj(&mut self, traj: Vec<Pose>) -> RobotResult<()> {
+        println!("ExMobileBase move_traj base pose: {traj:?}");
+        Ok(())
+    }
+
+    fn move_path<F>(&mut self, _path: F) -> RobotResult<()>
+    where
+        F: Fn(f64) -> Option<Pose>,
+    {
+        println!("ExMobileBase move_path base pose");
+        Ok(())
+    }
+
+    fn move_waypoints(&mut self, waypoints: Vec<Pose>) -> RobotResult<()> {
+        println!("ExMobileBase move_waypoints base pose: {waypoints:?}");
+        Ok(())
+    }
+}
+
+impl MoveTo<BaseVelocitySpace> for ExMobileBase {
+    fn move_to(&mut self, target: [f64; 6]) -> RobotResult<()> {
+        println!("ExMobileBase move_to base velocity: {target:?}");
+        Ok(())
+    }
+}
+
+impl MoveTraj<BaseVelocitySpace> for ExMobileBase {
+    fn move_traj(&mut self, traj: Vec<[f64; 6]>) -> RobotResult<()> {
+        println!("ExMobileBase move_traj base velocity: {traj:?}");
+        Ok(())
+    }
+
+    fn move_path<F>(&mut self, _path: F) -> RobotResult<()>
+    where
+        F: Fn(f64) -> Option<[f64; 6]>,
+    {
+        println!("ExMobileBase move_path base velocity");
+        Ok(())
+    }
+
+    fn move_waypoints(&mut self, waypoints: Vec<[f64; 6]>) -> RobotResult<()> {
+        println!("ExMobileBase move_waypoints base velocity: {waypoints:?}");
+        Ok(())
+    }
+}
+
+impl ControlWith<BaseVelocityControl> for ExMobileBase {
+    fn hold_command(state: &BaseState) -> [f64; 6] {
+        hold_base_velocity(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(BaseState, Duration) -> ([f64; 6], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(
+            closure,
+            "ExMobileBase base_velocity_control",
+            BaseState::default(),
+        );
+        Ok(())
+    }
+}
+
+impl ControlWith<BalanceControl> for ExMobileBase {
+    fn hold_command(state: &BaseState) -> [f64; 6] {
+        hold_base_velocity(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(BaseState, Duration) -> ([f64; 6], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(
+            closure,
+            "ExMobileBase balance_control",
+            BaseState::default(),
+        );
+        Ok(())
+    }
+}
+
+impl<const N: usize> Robot for ExQuadruped<N> {
+    type State = QuadrupedState<N>;
+    const CONTROL_PERIOD: f64 = 0.002;
+
+    fn version() -> String {
+        format!("ExQuadruped<{N}> v{}", env!("CARGO_PKG_VERSION"))
+    }
+
+    fn read_state(&mut self) -> RobotResult<Self::State> {
+        println!("ExQuadruped<{N}> read_state");
+        Ok(QuadrupedState::default())
+    }
+}
+
+impl<const N: usize> Joints<N> for ExQuadruped<N> {
+    const JOINT_MIN: [f64; N] = [-1.0; N];
     const JOINT_MAX: [f64; N] = [1.0; N];
 }
 
-impl<const N: usize> ArmForwardKinematics<N> for ExRobot<N>
-where
-    [(); N + 1]:,
-{
-    const DH: [DhParam; N] = [dh_param!(0., 0., 0., 0.); N];
+impl<const N: usize> Quadruped<N> for ExQuadruped<N> {
+    fn state(&mut self) -> RobotResult<QuadrupedState<N>> {
+        println!("ExQuadruped<{N}> state");
+        Ok(QuadrupedState::default())
+    }
 }
 
-impl<const N: usize> ArmPreplannedMotion<N> for ExRobot<N> {
-    fn move_joint(&mut self, target: &[f64; N]) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_joint: {target:?}");
-        print!("    ");
-        self.move_joint_async(target)
-    }
-
-    fn move_joint_async(&mut self, target: &[f64; N]) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_joint_async: {target:?}");
-        Ok(())
-    }
-
-    fn move_cartesian(&mut self, target: &Pose) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_cartesian: {target:?}");
-        print!("    ");
-        self.move_cartesian_async(target)
-    }
-
-    fn move_cartesian_async(&mut self, target: &Pose) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_cartesian_async: {target:?}");
+impl<const N: usize> MoveTo<GaitSpace> for ExQuadruped<N> {
+    fn move_to(&mut self, target: GaitCommand) -> RobotResult<()> {
+        println!("ExQuadruped<{N}> move_to gait: {target:?}");
         Ok(())
     }
 }
 
-impl<const N: usize> ArmPreplannedPath<N> for ExRobot<N> {
-    fn move_traj(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_traj: {path:?}");
-        self.move_traj_async(path)?;
-        Ok(())
-    }
-    fn move_traj_async(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_traj_async: {path:?}");
-        Ok(())
-    }
-
-    fn move_waypoints(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_waypoints: {path:?}");
-        self.move_waypoints_async(path)
-    }
-    fn move_waypoints_async(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_waypoints_async: {path:?}");
-        Ok(())
-    }
-    fn move_waypoints_start(&mut self, start: MotionType<N>) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_waypoints_start: {start:?}");
-        Ok(())
-    }
-    fn move_waypoints_prepare(&mut self, path: Vec<MotionType<N>>) -> RobotResult<()> {
-        println!("ExRobot<{N}> move_waypoints_prepare: {path:?}");
+impl<const N: usize> MoveTo<WholeBodyJointSpace<N>> for ExQuadruped<N> {
+    fn move_to(&mut self, target: [f64; N]) -> RobotResult<()> {
+        println!("ExQuadruped<{N}> move_to whole-body joint: {target:?}");
         Ok(())
     }
 }
 
-impl<const N: usize> ArmStreamingHandle<N> for ExRobotHandle<N> {
-    fn last_motion(&self) -> Option<MotionType<N>> {
-        println!("ExRobotHandle<{N}> last_motion");
-        Some(MotionType::Joint([0.0; N]))
-    }
-    fn move_to(&mut self, target: MotionType<N>) -> RobotResult<()> {
-        println!("ExRobotHandle<{N}> move_to: {target:?}");
-        Ok(())
-    }
-    fn last_control(&self) -> Option<ControlType<N>> {
-        println!("ExRobotHandle<{N}> last_control");
-        Some(ControlType::Torque([0.0; N]))
-    }
-    fn control_with(&mut self, control: ControlType<N>) -> RobotResult<()> {
-        println!("ExRobotHandle<{N}> control_with: {control:?}");
+impl<const N: usize> MoveTo<WholeBodyVelocitySpace<N>> for ExQuadruped<N> {
+    fn move_to(&mut self, target: [f64; N]) -> RobotResult<()> {
+        println!("ExQuadruped<{N}> move_to whole-body velocity: {target:?}");
         Ok(())
     }
 }
 
-impl<const N: usize> ArmStreamingMotion<N> for ExRobot<N> {
-    type Handle = ExRobotHandle<N>;
-    fn start_streaming(&mut self) -> RobotResult<Self::Handle> {
-        println!("ExRobot<{N}> start_streaming");
-        Ok(ExRobotHandle::<N>)
+impl<const N: usize> MoveTo<WholeBodyTorqueSpace<N>> for ExQuadruped<N> {
+    fn move_to(&mut self, target: [f64; N]) -> RobotResult<()> {
+        println!("ExQuadruped<{N}> move_to whole-body torque: {target:?}");
+        Ok(())
     }
-    fn end_streaming(&mut self) -> RobotResult<()> {
-        println!("ExRobot<{N}> end_streaming");
+}
+
+impl<const N: usize, const LEG: usize> MoveTo<FootSpace<LEG>> for ExQuadruped<N> {
+    fn move_to(&mut self, target: Pose) -> RobotResult<()> {
+        println!("ExQuadruped<{N}> move_to foot {LEG}: {target:?}");
+        Ok(())
+    }
+}
+
+impl<const N: usize> MoveTraj<WholeBodyJointSpace<N>> for ExQuadruped<N> {
+    fn move_traj(&mut self, traj: Vec<[f64; N]>) -> RobotResult<()> {
+        println!("ExQuadruped<{N}> move_traj whole-body joint: {traj:?}");
         Ok(())
     }
 
-    fn move_to_target(&mut self) -> Arc<Mutex<Option<MotionType<N>>>> {
-        println!("ExRobot<{N}> move_to_target");
-        Arc::new(Mutex::new(Some(MotionType::Joint([0.0; N]))))
-    }
-    fn control_with_target(&mut self) -> Arc<Mutex<Option<ControlType<N>>>> {
-        println!("ExRobot<{N}> control_with_target");
-        Arc::new(Mutex::new(Some(ControlType::Torque([0.0; N]))))
-    }
-}
-
-impl<const N: usize> ArmStreamingMotionExt<N> for ExRobot<N> {
-    fn move_joint_target(&mut self) -> Arc<Mutex<Option<[f64; N]>>> {
-        println!("ExRobot<{N}> move_joint_target");
-        Arc::new(Mutex::new(Some([0.0; N])))
-    }
-    fn move_joint_vel_target(&mut self) -> Arc<Mutex<Option<[f64; N]>>> {
-        println!("ExRobot<{N}> move_joint_vel_target");
-        Arc::new(Mutex::new(Some([0.0; N])))
-    }
-    fn move_joint_acc_target(&mut self) -> Arc<Mutex<Option<[f64; N]>>> {
-        println!("ExRobot<{N}> move_joint_acc_target");
-        Arc::new(Mutex::new(Some([0.0; N])))
-    }
-    fn move_cartesian_target(&mut self) -> Arc<Mutex<Option<Pose>>> {
-        println!("ExRobot<{N}> move_cartesian_target");
-        Arc::new(Mutex::new(Some(Pose::default())))
-    }
-    fn move_cartesian_vel_target(&mut self) -> Arc<Mutex<Option<[f64; 6]>>> {
-        println!("ExRobot<{N}> move_cartesian_vel_target");
-        Arc::new(Mutex::new(Some([0.0; 6])))
-    }
-    fn move_cartesian_quat_target(&mut self) -> Arc<Mutex<Option<na::Isometry3<f64>>>> {
-        println!("ExRobot<{N}> move_cartesian_quat_target");
-        Arc::new(Mutex::new(Some(na::Isometry3::identity())))
-    }
-    fn move_cartesian_homo_target(&mut self) -> Arc<Mutex<Option<[f64; 16]>>> {
-        println!("ExRobot<{N}> move_cartesian_homo_target");
-        Arc::new(Mutex::new(Some([0.0; 16])))
-    }
-    fn move_cartesian_euler_target(&mut self) -> Arc<Mutex<Option<[f64; 6]>>> {
-        println!("ExRobot<{N}> move_cartesian_euler_target");
-        Arc::new(Mutex::new(Some([0.0; 6])))
-    }
-    fn control_tau_target(&mut self) -> Arc<Mutex<Option<[f64; N]>>> {
-        println!("ExRobot<{N}> control_tau_target");
-        Arc::new(Mutex::new(Some([0.0; N])))
-    }
-}
-
-impl<const N: usize> Realtime for ExRobot<N> {}
-
-impl<const N: usize> ArmRealtimeControl<N> for ExRobot<N> {
-    fn move_with_closure<FM>(&mut self, mut closure: FM) -> RobotResult<()>
+    fn move_path<F>(&mut self, _path: F) -> RobotResult<()>
     where
-        FM: FnMut(ArmState<N>, std::time::Duration) -> (MotionType<N>, bool) + Send + 'static,
+        F: Fn(f64) -> Option<[f64; N]>,
     {
-        println!(
-            "closure use for default state = {:?}",
-            closure(ArmState::default(), Duration::from_secs(0))
-        );
-        println!("ExRobot<{N}> move_with_closure");
-        let mut duration = Duration::from_secs(0);
-        thread::spawn(move || {
-            loop {
-                let (motion, finished) = closure(ArmState::default(), duration);
-                println!("\t| {duration:?} | motion: {motion:?}, finished: {finished}");
-                if finished {
-                    break;
-                }
-                duration += Duration::from_millis(100);
-            }
-        });
+        println!("ExQuadruped<{N}> move_path whole-body joint");
         Ok(())
     }
-    fn control_with_closure<FC>(&mut self, mut closure: FC) -> RobotResult<()>
-    where
-        FC: FnMut(ArmState<N>, std::time::Duration) -> (ControlType<N>, bool) + Send + 'static,
-    {
-        println!(
-            "closure use for default state = {:?}",
-            closure(ArmState::default(), Duration::from_secs(0))
-        );
-        println!("ExRobot<{N}> control_with_closure");
-        let mut duration = Duration::from_secs(0);
-        thread::spawn(move || {
-            loop {
-                let (control, finished) = closure(ArmState::default(), duration);
-                println!("\t| {duration:?} | control: {control:?}, finished: {finished}");
-                if finished {
-                    break;
-                }
-                duration += Duration::from_millis(100);
-            }
-        });
+
+    fn move_waypoints(&mut self, waypoints: Vec<[f64; N]>) -> RobotResult<()> {
+        println!("ExQuadruped<{N}> move_waypoints whole-body joint: {waypoints:?}");
         Ok(())
     }
 }
 
-impl<const N: usize> ArmRealtimeControlExt<N> for ExRobot<N> {}
+impl<const N: usize> ControlWith<TorqueControl<N>> for ExQuadruped<N> {
+    fn hold_command(state: &JointState<N>) -> [f64; N] {
+        hold_joint_torque(state)
+    }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use nalgebra as na;
-    use robot_behavior::{Coord, LoadState, Pose, RobotResult};
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(
+            closure,
+            "ExQuadruped whole_body_torque_control",
+            JointState::default(),
+        );
+        Ok(())
+    }
+}
 
-    #[test]
-    fn robot_behavior() -> RobotResult<()> {
-        let mut robot = ExRobot::<6>::new();
-        assert_eq!(ExRobot::<6>::version(), env!("CARGO_PKG_VERSION"));
-        robot.init()?;
-        robot.shutdown()?;
-        robot.enable()?;
-        robot.disable()?;
-        robot.reset()?;
-        assert!(!robot.is_moving()?);
-        robot.stop()?;
-        robot.pause()?;
-        robot.resume()?;
-        robot.emergency_stop()?;
-        robot.clear_emergency_stop()?;
-        robot.read_state()?;
+impl<const N: usize> ControlWith<JointPositionControl<N>> for ExQuadruped<N> {
+    fn hold_command(state: &JointState<N>) -> [f64; N] {
+        hold_joint_position(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(
+            closure,
+            "ExQuadruped whole_body_position_control",
+            JointState::default(),
+        );
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<JointVelocityControl<N>> for ExQuadruped<N> {
+    fn hold_command(state: &JointState<N>) -> [f64; N] {
+        hold_joint_velocity(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(
+            closure,
+            "ExQuadruped whole_body_velocity_control",
+            JointState::default(),
+        );
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<BaseVelocityControl> for ExQuadruped<N> {
+    fn hold_command(state: &BaseState) -> [f64; 6] {
+        hold_base_velocity(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(BaseState, Duration) -> ([f64; 6], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(
+            closure,
+            "ExQuadruped base_velocity_control",
+            BaseState::default(),
+        );
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<BalanceControl> for ExQuadruped<N> {
+    fn hold_command(state: &BaseState) -> [f64; 6] {
+        hold_base_velocity(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(BaseState, Duration) -> ([f64; 6], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(closure, "ExQuadruped balance_control", BaseState::default());
+        Ok(())
+    }
+}
+
+impl<const N: usize> Robot for ExHumanoid<N> {
+    type State = HumanoidState<N>;
+    const CONTROL_PERIOD: f64 = 0.002;
+
+    fn version() -> String {
+        format!("ExHumanoid<{N}> v{}", env!("CARGO_PKG_VERSION"))
+    }
+
+    fn read_state(&mut self) -> RobotResult<Self::State> {
+        println!("ExHumanoid<{N}> read_state");
+        Ok(HumanoidState::default())
+    }
+}
+
+impl<const N: usize> Joints<N> for ExHumanoid<N> {
+    const JOINT_MIN: [f64; N] = [-1.0; N];
+    const JOINT_MAX: [f64; N] = [1.0; N];
+}
+
+impl<const N: usize> Humanoid<N> for ExHumanoid<N> {
+    fn state(&mut self) -> RobotResult<HumanoidState<N>> {
+        println!("ExHumanoid<{N}> state");
+        Ok(HumanoidState::default())
+    }
+}
+
+impl<const N: usize> MoveTo<WholeBodyJointSpace<N>> for ExHumanoid<N> {
+    fn move_to(&mut self, target: [f64; N]) -> RobotResult<()> {
+        println!("ExHumanoid<{N}> move_to whole-body joint: {target:?}");
+        Ok(())
+    }
+}
+
+impl<const N: usize> MoveTo<WholeBodyVelocitySpace<N>> for ExHumanoid<N> {
+    fn move_to(&mut self, target: [f64; N]) -> RobotResult<()> {
+        println!("ExHumanoid<{N}> move_to whole-body velocity: {target:?}");
+        Ok(())
+    }
+}
+
+impl<const N: usize> MoveTo<WholeBodyTorqueSpace<N>> for ExHumanoid<N> {
+    fn move_to(&mut self, target: [f64; N]) -> RobotResult<()> {
+        println!("ExHumanoid<{N}> move_to whole-body torque: {target:?}");
+        Ok(())
+    }
+}
+
+impl<const N: usize> MoveTo<CenterOfMassSpace> for ExHumanoid<N> {
+    fn move_to(&mut self, target: [f64; 3]) -> RobotResult<()> {
+        println!("ExHumanoid<{N}> move_to center of mass: {target:?}");
+        Ok(())
+    }
+}
+
+impl<const N: usize, const HAND: usize> MoveTo<HandSpace<HAND>> for ExHumanoid<N> {
+    fn move_to(&mut self, target: Pose) -> RobotResult<()> {
+        println!("ExHumanoid<{N}> move_to hand {HAND}: {target:?}");
+        Ok(())
+    }
+}
+
+impl<const N: usize, const LEG: usize> MoveTo<FootSpace<LEG>> for ExHumanoid<N> {
+    fn move_to(&mut self, target: Pose) -> RobotResult<()> {
+        println!("ExHumanoid<{N}> move_to foot {LEG}: {target:?}");
+        Ok(())
+    }
+}
+
+impl<const N: usize> MoveTraj<WholeBodyJointSpace<N>> for ExHumanoid<N> {
+    fn move_traj(&mut self, traj: Vec<[f64; N]>) -> RobotResult<()> {
+        println!("ExHumanoid<{N}> move_traj whole-body joint: {traj:?}");
         Ok(())
     }
 
-    #[test]
-    fn arm_behavior() -> RobotResult<()> {
-        let mut robot = ExRobot::<6>::new();
-
-        robot.set_load(LoadState { m: 0., x: [0.; 3], i: [0.; 9] })?;
-        robot.set_coord(Coord::OCS)?;
-        robot.with_coord(Coord::OCS);
-        robot.set_scale(1.0)?;
-        robot.with_scale(1.0);
-        robot.with_velocity(&[0.0; 6]);
-        robot.with_acceleration(&[0.0; 6]);
-        robot.with_jerk(&[0.0; 6]);
-        robot.with_cartesian_velocity(1.0);
-        robot.with_cartesian_acceleration(1.0);
-        robot.with_cartesian_jerk(1.0);
-        robot.with_rotation_velocity(1.0);
-        robot.with_rotation_acceleration(1.0);
-        robot.with_rotation_jerk(1.0);
+    fn move_path<F>(&mut self, _path: F) -> RobotResult<()>
+    where
+        F: Fn(f64) -> Option<[f64; N]>,
+    {
+        println!("ExHumanoid<{N}> move_path whole-body joint");
         Ok(())
     }
 
-    #[test]
-    fn arm_param() {
-        let identity = na::Isometry3::identity();
-        assert_eq!(ExRobot::<0>::fk_end_pose(&[0.; 0]), Pose::Quat(identity));
-        assert_eq!(ExRobot::<1>::fk_end_pose(&[0.; 1]), Pose::Quat(identity));
-        assert_eq!(ExRobot::<2>::fk_end_pose(&[0.; 2]), Pose::Quat(identity));
-        assert_eq!(ExRobot::<3>::fk_end_pose(&[0.; 3]), Pose::Quat(identity));
-        assert_eq!(ExRobot::<4>::fk_end_pose(&[0.; 4]), Pose::Quat(identity));
-        assert_eq!(ExRobot::<5>::fk_end_pose(&[0.; 5]), Pose::Quat(identity));
-        assert_eq!(ExRobot::<6>::fk_end_pose(&[0.; 6]), Pose::Quat(identity));
-        assert_eq!(ExRobot::<7>::fk_end_pose(&[0.; 7]), Pose::Quat(identity));
-    }
-
-    #[test]
-    fn arm_preplanned_motion() -> RobotResult<()> {
-        let mut robot = ExRobot::<6>::new();
-        robot.move_joint(&[0.0; 6])?;
-        robot.move_joint_async(&[0.0; 6])?;
-        robot.move_cartesian(&Pose::default())?;
-        robot.move_cartesian_async(&Pose::default())?;
-        robot.move_to(MotionType::Joint([0.0; 6]))?;
-        robot.move_to_async(MotionType::Joint([0.0; 6]))?;
-        robot.move_rel(MotionType::Joint([0.0; 6]))?;
-        robot.move_rel_async(MotionType::Joint([0.0; 6]))?;
-        robot.move_int(MotionType::Joint([0.0; 6]))?;
-        robot.move_int_async(MotionType::Joint([0.0; 6]))?;
-        robot.move_traj(vec![MotionType::Joint([0.0; 6]); 6])?;
-        robot.move_traj_async(vec![MotionType::Joint([0.0; 6]); 6])?;
-        robot.move_waypoints(vec![MotionType::Joint([0.0; 6]); 6])?;
-        robot.move_waypoints_async(vec![MotionType::Joint([0.0; 6]); 6])?;
+    fn move_waypoints(&mut self, waypoints: Vec<[f64; N]>) -> RobotResult<()> {
+        println!("ExHumanoid<{N}> move_waypoints whole-body joint: {waypoints:?}");
         Ok(())
     }
+}
 
-    #[test]
-    fn py_arm_realtime_control() -> RobotResult<()> {
-        let mut robot = ExRobot::<6>::new();
-        let closure = |_, t: Duration| (MotionType::Joint([0.0; 6]), t.as_secs() > 1);
-        robot.move_with_closure(closure)?;
-        thread::sleep(Duration::from_secs(2));
+impl<const N: usize> ControlWith<TorqueControl<N>> for ExHumanoid<N> {
+    fn hold_command(state: &JointState<N>) -> [f64; N] {
+        hold_joint_torque(state)
+    }
 
-        let closure = |_, t: Duration| (ControlType::Torque([0.0; 6]), t.as_secs() > 1);
-        robot.control_with_closure(closure)?;
-        thread::sleep(Duration::from_secs(2));
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(
+            closure,
+            "ExHumanoid whole_body_torque_control",
+            JointState::default(),
+        );
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<JointPositionControl<N>> for ExHumanoid<N> {
+    fn hold_command(state: &JointState<N>) -> [f64; N] {
+        hold_joint_position(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(
+            closure,
+            "ExHumanoid whole_body_position_control",
+            JointState::default(),
+        );
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<JointVelocityControl<N>> for ExHumanoid<N> {
+    fn hold_command(state: &JointState<N>) -> [f64; N] {
+        hold_joint_velocity(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(
+            closure,
+            "ExHumanoid whole_body_velocity_control",
+            JointState::default(),
+        );
+        Ok(())
+    }
+}
+
+impl<const N: usize> ControlWith<BalanceControl> for ExHumanoid<N> {
+    fn hold_command(state: &BaseState) -> [f64; 6] {
+        hold_base_velocity(state)
+    }
+
+    fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
+    where
+        F: FnMut(BaseState, Duration) -> ([f64; 6], bool) + Send + 'static,
+    {
+        spawn_state_realtime_loop(closure, "ExHumanoid balance_control", BaseState::default());
         Ok(())
     }
 }
