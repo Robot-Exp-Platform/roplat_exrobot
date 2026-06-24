@@ -7,7 +7,7 @@ use robot_behavior::{
     Robot, RobotDescription, RobotResult, TorqueControl, WholeBodyJointSpace, WholeBodyTorqueSpace,
     WholeBodyVelocitySpace,
 };
-use std::{thread, time::Duration};
+use std::time::Duration;
 
 #[derive(Default)]
 pub struct ExRobot<const N: usize>;
@@ -317,41 +317,37 @@ impl<const N: usize> MoveTraj<FlangeSpace> for ExRobot<N> {
 
 fn spawn_realtime_loop<const N: usize, C, F>(mut closure: F, label: &'static str)
 where
-    C: std::fmt::Debug + Send + 'static,
-    F: FnMut(ArmState<N>, Duration) -> (C, bool) + Send + 'static,
+    C: std::fmt::Debug,
+    F: FnMut(ArmState<N>, Duration) -> (C, bool),
 {
     println!("ExRobot<{N}> {label}");
-    thread::spawn(move || {
-        let mut duration = Duration::from_secs(0);
-        loop {
-            let (command, finished) = closure(ArmState::default(), duration);
-            println!("\t| {duration:?} | command: {command:?}, finished: {finished}");
-            if finished {
-                break;
-            }
-            duration += Duration::from_millis(100);
+    let mut duration = Duration::from_secs(0);
+    loop {
+        let (command, finished) = closure(ArmState::default(), duration);
+        println!("\t| {duration:?} | command: {command:?}, finished: {finished}");
+        if finished {
+            break;
         }
-    });
+        duration += Duration::from_millis(100);
+    }
 }
 
 fn spawn_state_realtime_loop<O, C, F>(mut closure: F, label: &'static str, obs: O)
 where
-    O: Clone + Send + 'static,
-    C: std::fmt::Debug + Send + 'static,
-    F: FnMut(O, Duration) -> (C, bool) + Send + 'static,
+    O: Clone,
+    C: std::fmt::Debug,
+    F: FnMut(O, Duration) -> (C, bool),
 {
     println!("{label}");
-    thread::spawn(move || {
-        let mut duration = Duration::from_secs(0);
-        loop {
-            let (command, finished) = closure(obs.clone(), duration);
-            println!("\t| {duration:?} | command: {command:?}, finished: {finished}");
-            if finished {
-                break;
-            }
-            duration += Duration::from_millis(100);
+    let mut duration = Duration::from_secs(0);
+    loop {
+        let (command, finished) = closure(obs.clone(), duration);
+        println!("\t| {duration:?} | command: {command:?}, finished: {finished}");
+        if finished {
+            break;
         }
-    });
+        duration += Duration::from_millis(100);
+    }
 }
 
 impl<const N: usize> ControlWith<TorqueControl<N>> for ExRobot<N> {
@@ -361,7 +357,7 @@ impl<const N: usize> ControlWith<TorqueControl<N>> for ExRobot<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool),
     {
         spawn_state_realtime_loop(closure, "torque_control", JointState::default());
         Ok(())
@@ -375,7 +371,7 @@ impl<const N: usize> ControlWith<ArmTorqueControl<N>> for ExRobot<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(ArmState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+        F: FnMut(ArmState<N>, Duration) -> ([f64; N], bool),
     {
         spawn_realtime_loop(closure, "arm_torque_control");
         Ok(())
@@ -389,7 +385,7 @@ impl<const N: usize> ControlWith<JointPositionControl<N>> for ExRobot<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool),
     {
         spawn_state_realtime_loop(closure, "joint_position_control", JointState::default());
         Ok(())
@@ -403,7 +399,7 @@ impl<const N: usize> ControlWith<JointVelocityControl<N>> for ExRobot<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool),
     {
         spawn_state_realtime_loop(closure, "joint_velocity_control", JointState::default());
         Ok(())
@@ -417,7 +413,7 @@ impl<const N: usize> ControlWith<CartesianVelocityControl<N>> for ExRobot<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(ArmState<N>, Duration) -> ([f64; 6], bool) + Send + 'static,
+        F: FnMut(ArmState<N>, Duration) -> ([f64; 6], bool),
     {
         spawn_realtime_loop(closure, "cartesian_velocity_control");
         Ok(())
@@ -431,7 +427,7 @@ impl<const N: usize> ControlWith<CartesianPoseControl<N>> for ExRobot<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(ArmState<N>, Duration) -> (Pose, bool) + Send + 'static,
+        F: FnMut(ArmState<N>, Duration) -> (Pose, bool),
     {
         spawn_realtime_loop(closure, "cartesian_pose_control");
         Ok(())
@@ -520,7 +516,7 @@ impl ControlWith<BaseVelocityControl> for ExMobileBase {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(BaseState, Duration) -> ([f64; 6], bool) + Send + 'static,
+        F: FnMut(BaseState, Duration) -> ([f64; 6], bool),
     {
         spawn_state_realtime_loop(
             closure,
@@ -538,7 +534,7 @@ impl ControlWith<BalanceControl> for ExMobileBase {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(BaseState, Duration) -> ([f64; 6], bool) + Send + 'static,
+        F: FnMut(BaseState, Duration) -> ([f64; 6], bool),
     {
         spawn_state_realtime_loop(
             closure,
@@ -637,7 +633,7 @@ impl<const N: usize> ControlWith<TorqueControl<N>> for ExQuadruped<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool),
     {
         spawn_state_realtime_loop(
             closure,
@@ -655,7 +651,7 @@ impl<const N: usize> ControlWith<JointPositionControl<N>> for ExQuadruped<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool),
     {
         spawn_state_realtime_loop(
             closure,
@@ -673,7 +669,7 @@ impl<const N: usize> ControlWith<JointVelocityControl<N>> for ExQuadruped<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool),
     {
         spawn_state_realtime_loop(
             closure,
@@ -691,7 +687,7 @@ impl<const N: usize> ControlWith<BaseVelocityControl> for ExQuadruped<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(BaseState, Duration) -> ([f64; 6], bool) + Send + 'static,
+        F: FnMut(BaseState, Duration) -> ([f64; 6], bool),
     {
         spawn_state_realtime_loop(
             closure,
@@ -709,7 +705,7 @@ impl<const N: usize> ControlWith<BalanceControl> for ExQuadruped<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(BaseState, Duration) -> ([f64; 6], bool) + Send + 'static,
+        F: FnMut(BaseState, Duration) -> ([f64; 6], bool),
     {
         spawn_state_realtime_loop(closure, "ExQuadruped balance_control", BaseState::default());
         Ok(())
@@ -811,7 +807,7 @@ impl<const N: usize> ControlWith<TorqueControl<N>> for ExHumanoid<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool),
     {
         spawn_state_realtime_loop(
             closure,
@@ -829,7 +825,7 @@ impl<const N: usize> ControlWith<JointPositionControl<N>> for ExHumanoid<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool),
     {
         spawn_state_realtime_loop(
             closure,
@@ -847,7 +843,7 @@ impl<const N: usize> ControlWith<JointVelocityControl<N>> for ExHumanoid<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool) + Send + 'static,
+        F: FnMut(JointState<N>, Duration) -> ([f64; N], bool),
     {
         spawn_state_realtime_loop(
             closure,
@@ -865,7 +861,7 @@ impl<const N: usize> ControlWith<BalanceControl> for ExHumanoid<N> {
 
     fn control_with<F>(&mut self, closure: F) -> RobotResult<()>
     where
-        F: FnMut(BaseState, Duration) -> ([f64; 6], bool) + Send + 'static,
+        F: FnMut(BaseState, Duration) -> ([f64; 6], bool),
     {
         spawn_state_realtime_loop(closure, "ExHumanoid balance_control", BaseState::default());
         Ok(())
