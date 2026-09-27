@@ -1,6 +1,6 @@
 [package]
 name = "roplat_exrobot"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2024"
 authors = ["Yixing <yanjizhou312@163.com>"]
 readme = "README.md"
@@ -13,7 +13,7 @@ name = "roplat_exrobot"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-robot_behavior = { version = "0.6.0", git = "ssh://git@github.com/Robot-Exp-Platform/robot_behavior.git", rev = "79a3820af143a3ab75dfd3b308469482aac534c0" }
+robot_behavior = { version = "0.6.0", git = "ssh://git@github.com/Robot-Exp-Platform/robot_behavior.git", rev = "781245ca4d662a693cfb24955328a5a610859591" }
 pyo3 = { version = "0.28.3", optional = true, features = [
     "extension-module",
     "multiple-pymethods",
