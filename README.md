@@ -128,13 +128,6 @@ Rust APIs; these bindings currently wrap `ExRobot<6>`.
   suppressing feature checks.
 - **Why does a successful motion call leave state unchanged?** Commands are
   printed, not simulated. Use a dynamics backend when motion feedback matters.
-- **Why does building this repository ask for SSH access?** The source manifest
-  pins `robot_behavior` to a GitHub SSH revision. Configure your existing SSH
-  key/agent and use `CARGO_NET_GIT_FETCH_WITH_CLI=true` as needed. The published
-  crates.io package uses a registry dependency instead; neither route needs a
-  sibling checkout. When using the Git version in an application, import the
-  behavior traits from that same pinned Git source to avoid two distinct copies
-  of the trait definitions.
 
 ## More information and license
 
