@@ -1,4 +1,4 @@
-use robot_behavior::behavior::*;
+use roplat_behavior::behavior::*;
 use roplat_exrobot::ExRobot;
 
 fn main() {

@@ -1,19 +1,19 @@
 [package]
 name = "roplat_exrobot"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 authors = ["Yixing <yanjizhou312@163.com>"]
 readme = "README.md"
 repository = "https://github.com/Robot-Exp-Platform/roplat_exrobot"
 license = "Apache-2.0"
-description = "a example robot behavior library for robot_behavior"
+description = "a example robot behavior library for roplat_behavior"
 
 [lib]
 name = "roplat_exrobot"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-robot_behavior = "0.8.0"
+roplat_behavior = "0.9.0"
 pyo3 = { version = "0.28.3", optional = true, features = [
     "extension-module",
     "multiple-pymethods",
@@ -28,5 +28,5 @@ cxx-build = "1.0"
 [features]
 default = []
 ffi = []
-to_py = ["pyo3", "ffi", "robot_behavior/to_py"]
-to_cxx = ["cxx", "ffi", "robot_behavior/to_cxx"]
+to_py = ["pyo3", "ffi", "roplat_behavior/to_py"]
+to_cxx = ["cxx", "ffi", "roplat_behavior/to_cxx"]
