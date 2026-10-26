@@ -41,8 +41,7 @@ roplat_behavior = "0.9.0"
 
 > `roplat_behavior` 0.9 (the renamed `robot_behavior`) and this release are not on crates.io yet; until they are, build from the [drives](https://github.com/Robot-Exp-Platform/drives) workspace. See the [migration notes](https://github.com/Robot-Exp-Platform/roplat_behavior/blob/main/MIGRATION.md).
 
-Use **Rust nightly**: the crate and its behavior dependency use
-`generic_const_exprs`. The default Rust API needs no robot SDK, device, or network
+Use **Rust nightly**: the behavior dependency uses `async_trait_bounds`. The default Rust API needs no robot SDK, device, or network
 connection. A normal platform C++ build toolchain is needed by the dependency
 builds; Windows users need MSVC Build Tools and the Windows SDK.
 
