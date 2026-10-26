@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use robot_behavior::{BaseVelocityControl, ControlWith, JointPositionControl};
+use roplat_behavior::{BaseVelocityControl, ControlWith, JointPositionControl};
 use roplat_exrobot::{ExMobileBase, ExRobot};
 
 #[test]
