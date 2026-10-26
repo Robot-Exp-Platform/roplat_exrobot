@@ -1,13 +1,13 @@
 # roplat_exrobot
 
-Console-only reference robots for learning the **`robot_behavior` capability
+Console-only reference robots for learning the **`roplat_behavior` capability
 interfaces**. Use them to try typed motion calls, write generic application code,
 or understand what a real driver needs to implement before connecting hardware.
 
 The objects print operations and return illustrative state. They do not connect
 to a robot, integrate dynamics, or simulate a commanded trajectory. The name
 does not imply a dependency on the roplat execution framework: this crate's
-primary abstraction is a set of `robot_behavior` trait implementations.
+primary abstraction is a set of `roplat_behavior` trait implementations.
 
 ## Design: capabilities describe what a robot can do
 
@@ -31,13 +31,15 @@ as an arm.
 ## Install
 
 The current published version is `0.2.0`. Add these dependencies to a Rust 2024
-project; `robot_behavior` is explicit because the application imports its traits:
+project; `roplat_behavior` is explicit because the application imports its traits:
 
 ```toml
 [dependencies]
-roplat_exrobot = "0.2.0"
-robot_behavior = "0.6.1"
+roplat_exrobot = "0.5.0"
+roplat_behavior = "0.9.0"
 ```
+
+> `roplat_behavior` 0.9 (the renamed `robot_behavior`) and this release are not on crates.io yet; until they are, build from the [drives](https://github.com/Robot-Exp-Platform/drives) workspace. See the [migration notes](https://github.com/Robot-Exp-Platform/roplat_behavior/blob/main/MIGRATION.md).
 
 Use **Rust nightly**: the crate and its behavior dependency use
 `generic_const_exprs`. The default Rust API needs no robot SDK, device, or network
@@ -50,7 +52,7 @@ Put this complete program in `src/main.rs`, then run `cargo +nightly run`.
 All operations below are console demonstrations.
 
 ```rust
-use robot_behavior::{behavior::*, RobotResult};
+use roplat_behavior::{behavior::*, RobotResult};
 use roplat_exrobot::ExRobot;
 
 fn main() -> RobotResult<()> {
@@ -123,7 +125,7 @@ Rust APIs; these bindings currently wrap `ExRobot<6>`.
 ## Common questions
 
 - **Methods such as `move_to` are not found:** import
-  `robot_behavior::behavior::*`; the public convenience methods come from traits.
+  `roplat_behavior::behavior::*`; the public convenience methods come from traits.
 - **Stable Rust rejects the build:** select the nightly toolchain rather than
   suppressing feature checks.
 - **Why does a successful motion call leave state unchanged?** Commands are
@@ -133,6 +135,6 @@ Rust APIs; these bindings currently wrap `ExRobot<6>`.
 
 - [Version example](examples/version.rs)
 - [Capability examples](examples/capability_showcase.rs)
-- [robot_behavior](https://github.com/Robot-Exp-Platform/robot_behavior)
+- [roplat_behavior](https://github.com/Robot-Exp-Platform/roplat_behavior)
 
 Licensed under [Apache-2.0](LICENSE).

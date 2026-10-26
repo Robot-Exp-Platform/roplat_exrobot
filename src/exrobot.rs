@@ -1,4 +1,4 @@
-use robot_behavior::{
+use roplat_behavior::{
     Arm, ArmState, ArmTorqueControl, BalanceControl, BasePoseSpace, BaseState, BaseVelocityControl,
     BaseVelocitySpace, CartesianPoseControl, CartesianVelocityControl, CenterOfMassSpace,
     ControlStep, ControlWith, EndPoint, FlangeSpace, FootSpace, GaitCommand, GaitSpace, HandSpace,
@@ -52,9 +52,9 @@ impl<const N: usize> ExHumanoid<N> {
 fn hold_joint_position<const N: usize>(state: &JointState<N>) -> [f64; N] {
     state
         .cmd
-        .q
-        .or(state.des.q)
-        .or(state.meas.q)
+        .q()
+        .or(state.des.q())
+        .or(state.meas.q())
         .unwrap_or([0.0; N])
 }
 
@@ -65,9 +65,9 @@ fn hold_joint_velocity<const N: usize>(_state: &JointState<N>) -> [f64; N] {
 fn hold_joint_torque<const N: usize>(state: &JointState<N>) -> [f64; N] {
     state
         .cmd
-        .tau
-        .or(state.des.tau)
-        .or(state.meas.tau)
+        .tau()
+        .or(state.des.tau())
+        .or(state.meas.tau())
         .unwrap_or([0.0; N])
 }
 
@@ -75,9 +75,9 @@ fn hold_arm_pose<const N: usize>(state: &ArmState<N>) -> Pose {
     state
         .flange
         .cmd
-        .pose
-        .or(state.flange.des.pose)
-        .or(state.flange.meas.pose)
+        .pose()
+        .or(state.flange.des.pose())
+        .or(state.flange.meas.pose())
         .unwrap_or_default()
 }
 
