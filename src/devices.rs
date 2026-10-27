@@ -97,7 +97,10 @@ impl ForceTorqueSensor for ExForceTorque {
         self.seq += 1;
         let (load, bias) = (self.load.to_array(), self.bias.to_array());
         let value = Wrench::from(std::array::from_fn::<f64, 6, _>(|i| load[i] - bias[i]));
-        Ok(ForceTorque::new(Header::new(MonotonicClock.now(), self.frame, self.seq), value))
+        Ok(ForceTorque::new(
+            Header::new(MonotonicClock.now(), self.frame, self.seq),
+            value,
+        ))
     }
 
     fn bias_wrench(&mut self) -> RobotResult<()> {
@@ -127,6 +130,9 @@ impl ImuSensor for ExImu {
             .with_orientation(Quaternion::IDENTITY)
             .with_angular_velocity(Vector3::ZERO)
             .with_linear_acceleration(Vector3::new(0.0, 0.0, 9.81));
-        Ok(Stamped::new(Header::new(MonotonicClock.now(), self.frame, self.seq), imu))
+        Ok(Stamped::new(
+            Header::new(MonotonicClock.now(), self.frame, self.seq),
+            imu,
+        ))
     }
 }
