@@ -99,6 +99,18 @@ finish or break, otherwise these illustrative loops continue indefinitely.
 humanoid `read_state()` methods return their corresponding typed default states.
 These values help exercise interface shape, not observe simulated motion.
 
+## Reference devices
+
+`ExGripper`, `ExForceTorque`, and `ExImu` implement the `Gripper`,
+`ForceTorqueSensor`, and `ImuSensor` contracts of `roplat_behavior` in the same
+spirit: they print commands and synthesize readings. The gripper reaches every
+commanded width at once (and rejects widths outside its stroke), reporting a
+grasp when the command's force is positive. The force/torque sensor reads a
+constant load you can change with `set_load` and supports tare. The IMU is at
+rest and level, reading +9.81 m/s² along z. Readings carry a monotonic-clock
+stamp, the frame given to `new`, and a per-device sequence number. Use them to
+exercise code written against the contracts, not to model a device.
+
 ## Next steps
 
 Read [capability_showcase.rs](examples/capability_showcase.rs) for complete arm,
