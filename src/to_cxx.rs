@@ -1,4 +1,6 @@
-use roplat_behavior::{Arm, FlangeSpace, JointSpace, LoadState, MoveTo, Pose, Robot, RobotResult};
+use roplat_behavior::{
+    Arm, EndPoint, FlangeSpace, JointSpace, LoadState, MoveTo, Pose, Robot, RobotResult,
+};
 
 struct ExRobot(crate::ExRobot<6>);
 
@@ -99,7 +101,11 @@ impl ExRobot {
     fn set_load(&mut self, m: f64, x: [f64; 3], i: [f64; 9]) -> RobotResult<()> {
         <crate::ExRobot<6> as Arm<6>>::set_load(
             &mut self.0,
-            LoadState { mass: m, center_of_mass: x, inertia: i },
+            LoadState {
+                mass: m,
+                center_of_mass: x,
+                inertia: i,
+            },
         )
     }
 
@@ -108,7 +114,7 @@ impl ExRobot {
     }
 
     fn get_endpoint(&self) -> CxxPoseData {
-        pose_to_cxx(<crate::ExRobot<6> as Arm<6>>::get_endpoint(&self.0))
+        pose_to_cxx(<crate::ExRobot<6> as EndPoint>::get_endpoint(&self.0))
     }
 
     fn move_joint(&mut self, target: [f64; 6]) -> RobotResult<()> {
@@ -135,7 +141,10 @@ fn pose_to_cxx(pose: Pose) -> CxxPoseData {
     let mut values = Vec::with_capacity(7);
     values.extend_from_slice(&tran);
     values.extend_from_slice(&rot);
-    CxxPoseData { kind: CxxPoseKind::Quat, values }
+    CxxPoseData {
+        kind: CxxPoseKind::Quat,
+        values,
+    }
 }
 
 fn cxx_to_pose(data: CxxPoseData) -> RobotResult<Pose> {

@@ -11,19 +11,31 @@ fn gripper_moves_grasps_and_rejects_out_of_range_widths() {
     let mut gripper = ExGripper::default();
     assert_eq!(gripper.read_gripper().unwrap().width, 0.08);
     gripper
-        .move_gripper(GripperCommand { width: 0.03, speed: 0.1, force: 0.0 })
+        .move_gripper(GripperCommand {
+            width: 0.03,
+            speed: 0.1,
+            force: 0.0,
+        })
         .unwrap();
     let state = gripper.read_gripper().unwrap();
     assert_eq!((state.width, state.grasped), (0.03, 0));
     gripper
-        .move_gripper(GripperCommand { width: 0.01, speed: 0.1, force: 20.0 })
+        .move_gripper(GripperCommand {
+            width: 0.01,
+            speed: 0.1,
+            force: 20.0,
+        })
         .unwrap();
     assert_eq!(gripper.read_gripper().unwrap().grasped, 1);
     gripper.home_gripper().unwrap();
     assert_eq!(gripper.read_gripper().unwrap().width, 0.08);
     assert!(
         gripper
-            .move_gripper(GripperCommand { width: 0.2, speed: 0.1, force: 0.0 })
+            .move_gripper(GripperCommand {
+                width: 0.2,
+                speed: 0.1,
+                force: 0.0
+            })
             .is_err()
     );
 }
