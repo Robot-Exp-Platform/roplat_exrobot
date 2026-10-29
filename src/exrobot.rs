@@ -1,10 +1,10 @@
 use roplat_behavior::{
     Arm, ArmState, ArmTorqueControl, BalanceControl, BasePoseSpace, BaseState, BaseVelocityControl,
     BaseVelocitySpace, CartesianPoseControl, CartesianVelocityControl, CenterOfMassSpace,
-    ControlStep, ControlWith, EndPoint, FlangeSpace, FootSpace, GaitCommand, GaitSpace, HandSpace,
-    Humanoid, HumanoidState, JointPositionControl, JointSpace, JointState, JointVelocityControl,
-    Joints, LoadState, MobileBase, MobileBaseState, MotionLimits, MoveTo, MoveTraj, Pose,
-    Quadruped, QuadrupedState, Robot, RobotDescription, RobotResult, TorqueControl,
+    ControlStep, ControlWith, EndPoint, EndPointPose, FlangeSpace, FootSpace, GaitCommand,
+    GaitSpace, HandSpace, Humanoid, HumanoidState, JointPositionControl, JointSpace, JointState,
+    JointVelocityControl, Joints, LoadState, MobileBase, MobileBaseState, MotionLimits, MoveTo,
+    MoveTraj, Pose, Quadruped, QuadrupedState, Robot, RobotDescription, RobotResult, TorqueControl,
     WholeBodyJointSpace, WholeBodyTorqueSpace, WholeBodyVelocitySpace,
 };
 use std::ops::ControlFlow;
@@ -193,7 +193,9 @@ impl<const N: usize> EndPoint for ExRobot<N> {
     const CARTESIAN_ACC_BOUND: f64 = 1.0;
     const ROTATION_VEL_BOUND: f64 = 1.0;
     const ROTATION_ACC_BOUND: f64 = 1.0;
+}
 
+impl<const N: usize> EndPointPose for ExRobot<N> {
     fn get_endpoint(&self) -> Pose {
         Pose::default()
     }
