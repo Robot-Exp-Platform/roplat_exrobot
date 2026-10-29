@@ -1,4 +1,6 @@
-use roplat_behavior::{Arm, FlangeSpace, JointSpace, LoadState, MoveTo, Pose, Robot, RobotResult};
+use roplat_behavior::{
+    Arm, EndPointPose, FlangeSpace, JointSpace, LoadState, MoveTo, Pose, Robot, RobotResult,
+};
 
 struct ExRobot(crate::ExRobot<6>);
 
@@ -108,7 +110,7 @@ impl ExRobot {
     }
 
     fn get_endpoint(&self) -> CxxPoseData {
-        pose_to_cxx(<crate::ExRobot<6> as Arm<6>>::get_endpoint(&self.0))
+        pose_to_cxx(<crate::ExRobot<6> as EndPointPose>::get_endpoint(&self.0))
     }
 
     fn move_joint(&mut self, target: [f64; 6]) -> RobotResult<()> {

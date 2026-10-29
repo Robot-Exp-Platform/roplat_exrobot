@@ -14,7 +14,7 @@ mod roplat_exrobot {
     #[pymodule_export]
     use super::to_py::PyExRobot;
     #[pymodule_export]
-    use roplat_behavior::{
+    use roplat_behavior_ffi::{
         PyArmState, PyJointSample, PyJointState, PyLoadState, PyMotionType, PyPose,
         PySpatialSample, PySpatialState,
     };

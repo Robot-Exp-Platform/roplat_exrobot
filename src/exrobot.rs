@@ -1,17 +1,25 @@
 use roplat_behavior::{
     Arm, ArmState, ArmTorqueControl, BalanceControl, BasePoseSpace, BaseState, BaseVelocityControl,
     BaseVelocitySpace, CartesianPoseControl, CartesianVelocityControl, CenterOfMassSpace,
-    ControlStep, ControlWith, EndPoint, FlangeSpace, FootSpace, GaitCommand, GaitSpace, HandSpace,
-    Humanoid, HumanoidState, JointPositionControl, JointSpace, JointState, JointVelocityControl,
-    Joints, LoadState, MobileBase, MobileBaseState, MoveTo, MoveTraj, Pose, Quadruped,
-    QuadrupedState, Robot, RobotDescription, RobotResult, TorqueControl, WholeBodyJointSpace,
-    WholeBodyTorqueSpace, WholeBodyVelocitySpace,
+    ControlStep, ControlWith, EndPoint, EndPointPose, FlangeSpace, FootSpace, GaitCommand,
+    GaitSpace, HandSpace, Humanoid, HumanoidState, JointPositionControl, JointSpace, JointState,
+    JointVelocityControl, Joints, LoadState, MobileBase, MobileBaseState, MotionLimits, MoveTo,
+    MoveTraj, Pose, Quadruped, QuadrupedState, Robot, RobotDescription, RobotResult, TorqueControl,
+    WholeBodyJointSpace, WholeBodyTorqueSpace, WholeBodyVelocitySpace,
 };
 use std::ops::ControlFlow;
 use std::time::Duration;
 
-#[derive(Default)]
-pub struct ExRobot<const N: usize>;
+/// A console arm: it prints every call and keeps only its motion limits.
+pub struct ExRobot<const N: usize> {
+    limits: MotionLimits<N>,
+}
+
+impl<const N: usize> Default for ExRobot<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Default)]
 pub struct ExRobotHandle<const N: usize>;
@@ -27,7 +35,7 @@ pub struct ExHumanoid<const N: usize>;
 
 impl<const N: usize> ExRobot<N> {
     pub fn new() -> Self {
-        ExRobot
+        ExRobot { limits: MotionLimits::envelope::<Self>() }
     }
 }
 
@@ -103,7 +111,7 @@ impl<const N: usize> RobotDescription for ExHumanoid<N> {
 
 impl<const N: usize> Robot for ExRobot<N> {
     type State = String;
-    const CONTROL_PERIOD: f64 = 1.0;
+    const CONTROL_PERIOD: Duration = Duration::from_secs(1);
 
     fn version() -> String {
         env!("CARGO_PKG_VERSION").to_string()
@@ -187,6 +195,12 @@ impl<const N: usize> EndPoint for ExRobot<N> {
     const ROTATION_ACC_BOUND: f64 = 1.0;
 }
 
+impl<const N: usize> EndPointPose for ExRobot<N> {
+    fn get_endpoint(&self) -> Pose {
+        Pose::default()
+    }
+}
+
 impl<const N: usize> Arm<N> for ExRobot<N> {
     fn state(&mut self) -> RobotResult<ArmState<N>> {
         println!("ExRobot<{N}> state");
@@ -202,63 +216,15 @@ impl<const N: usize> Arm<N> for ExRobot<N> {
         [0.; N]
     }
 
-    fn get_endpoint(&self) -> Pose {
-        Pose::default()
+    fn motion_limits(&self) -> MotionLimits<N> {
+        self.limits
     }
 
-    fn with_joint_vel(self, joint_vel: [f64; N]) -> Self {
-        println!("ExRobot<{N}> with_joint_vel: {joint_vel:?}");
-        self
-    }
-
-    fn with_joint_acc(self, joint_acc: [f64; N]) -> Self {
-        println!("ExRobot<{N}> with_joint_acc: {joint_acc:?}");
-        self
-    }
-
-    fn with_joint_jerk(self, joint_jerk: [f64; N]) -> Self {
-        println!("ExRobot<{N}> with_joint_jerk: {joint_jerk:?}");
-        self
-    }
-
-    fn with_torque(self, torque: [f64; N]) -> Self {
-        println!("ExRobot<{N}> with_torque: {torque:?}");
-        self
-    }
-
-    fn with_torque_dot(self, torque_dot: [f64; N]) -> Self {
-        println!("ExRobot<{N}> with_torque_dot: {torque_dot:?}");
-        self
-    }
-
-    fn with_cartesian_vel(self, cartesian_vel: f64) -> Self {
-        println!("ExRobot<{N}> with_cartesian_vel: {cartesian_vel}");
-        self
-    }
-
-    fn with_cartesian_acc(self, cartesian_acc: f64) -> Self {
-        println!("ExRobot<{N}> with_cartesian_acc: {cartesian_acc}");
-        self
-    }
-
-    fn with_cartesian_jerk(self, cartesian_jerk: f64) -> Self {
-        println!("ExRobot<{N}> with_cartesian_jerk: {cartesian_jerk}");
-        self
-    }
-
-    fn with_rotation_vel(self, rotation_vel: f64) -> Self {
-        println!("ExRobot<{N}> with_rotation_vel: {rotation_vel}");
-        self
-    }
-
-    fn with_rotation_acc(self, rotation_acc: f64) -> Self {
-        println!("ExRobot<{N}> with_rotation_acc: {rotation_acc}");
-        self
-    }
-
-    fn with_rotation_jerk(self, rotation_jerk: f64) -> Self {
-        println!("ExRobot<{N}> with_rotation_jerk: {rotation_jerk}");
-        self
+    fn set_motion_limits(&mut self, limits: MotionLimits<N>) -> RobotResult<()> {
+        limits.within(&MotionLimits::envelope::<Self>())?;
+        println!("ExRobot<{N}> set_motion_limits: {limits:?}");
+        self.limits = limits;
+        Ok(())
     }
 }
 
@@ -442,7 +408,7 @@ impl<const N: usize> ControlWith<CartesianPoseControl<N>> for ExRobot<N> {
 
 impl Robot for ExMobileBase {
     type State = MobileBaseState;
-    const CONTROL_PERIOD: f64 = 0.01;
+    const CONTROL_PERIOD: Duration = Duration::from_millis(10);
 
     fn version() -> String {
         format!("ExMobileBase v{}", env!("CARGO_PKG_VERSION"))
@@ -553,7 +519,7 @@ impl ControlWith<BalanceControl> for ExMobileBase {
 
 impl<const N: usize> Robot for ExQuadruped<N> {
     type State = QuadrupedState<N>;
-    const CONTROL_PERIOD: f64 = 0.002;
+    const CONTROL_PERIOD: Duration = Duration::from_millis(2);
 
     fn version() -> String {
         format!("ExQuadruped<{N}> v{}", env!("CARGO_PKG_VERSION"))
@@ -720,7 +686,7 @@ impl<const N: usize> ControlWith<BalanceControl> for ExQuadruped<N> {
 
 impl<const N: usize> Robot for ExHumanoid<N> {
     type State = HumanoidState<N>;
-    const CONTROL_PERIOD: f64 = 0.002;
+    const CONTROL_PERIOD: Duration = Duration::from_millis(2);
 
     fn version() -> String {
         format!("ExHumanoid<{N}> v{}", env!("CARGO_PKG_VERSION"))
