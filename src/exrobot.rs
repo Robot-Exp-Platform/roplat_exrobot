@@ -35,9 +35,7 @@ pub struct ExHumanoid<const N: usize>;
 
 impl<const N: usize> ExRobot<N> {
     pub fn new() -> Self {
-        ExRobot {
-            limits: MotionLimits::envelope::<Self>(),
-        }
+        ExRobot { limits: MotionLimits::envelope::<Self>() }
     }
 }
 

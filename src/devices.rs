@@ -25,11 +25,7 @@ pub struct ExGripper {
 impl ExGripper {
     /// Opens to `max_width` (m).
     pub fn new(max_width: f64) -> Self {
-        Self {
-            width: max_width,
-            max_width,
-            grasped: false,
-        }
+        Self { width: max_width, max_width, grasped: false }
     }
 }
 
@@ -87,12 +83,7 @@ pub struct ExForceTorque {
 
 impl ExForceTorque {
     pub fn new(frame: FrameId, load: Wrench) -> Self {
-        Self {
-            frame,
-            seq: 0,
-            load,
-            bias: Wrench::default(),
-        }
+        Self { frame, seq: 0, load, bias: Wrench::default() }
     }
 
     /// Changes the synthesized load, as if something were picked up.
