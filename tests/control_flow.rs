@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use roplat_behavior::{BaseVelocityControl, ControlWith, JointPositionControl};
+use roplat_behavior::{BaseVelocityControl, ControlWith, JointPositionControl, Robot};
 use roplat_exrobot::{ExMobileBase, ExRobot};
 
 #[test]
@@ -21,7 +21,8 @@ fn base_break_stops_after_one_valid_cycle() {
     let mut calls = 0;
     <ExMobileBase as ControlWith<BaseVelocityControl>>::control_with_flow(&mut robot, |_, dt| {
         calls += 1;
-        assert_eq!(dt.as_millis(), 100 * (calls - 1));
+        // Every cycle reports the nominal period (no cycle is ever missed).
+        assert_eq!(dt, ExMobileBase::CONTROL_PERIOD);
         if calls == 1 {
             ControlFlow::Continue(([0.0; 6], false))
         } else {
@@ -57,4 +58,16 @@ fn async_flow_callback_can_borrow_session_local_state() {
     )
     .unwrap();
     assert_eq!(calls, 1);
+}
+
+#[test]
+fn arm_cycles_report_the_nominal_period() {
+    let mut robot = ExRobot::<6>::new();
+    let mut periods = Vec::new();
+    <ExRobot<6> as ControlWith<JointPositionControl<6>>>::control_with(&mut robot, |_, dt| {
+        periods.push(dt);
+        ([0.0; 6], periods.len() == 3)
+    })
+    .unwrap();
+    assert_eq!(periods, vec![ExRobot::<6>::CONTROL_PERIOD; 3]);
 }
