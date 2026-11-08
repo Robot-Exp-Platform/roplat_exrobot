@@ -1,6 +1,9 @@
 use std::ops::ControlFlow;
 
-use roplat_behavior::{BaseVelocityControl, ControlWith, JointPositionControl, Robot};
+use roplat_behavior::{
+    BaseVelocityControl, CartesianPoseControl, ControlExit, ControlWith, JointPositionControl,
+    Robot, RobotException,
+};
 use roplat_exrobot::{ExMobileBase, ExRobot};
 
 #[test]
@@ -9,10 +12,49 @@ fn arm_break_stops_without_a_command() {
     let mut calls = 0;
     <ExRobot<6> as ControlWith<JointPositionControl<6>>>::control_with_flow(&mut robot, |_, _| {
         calls += 1;
-        ControlFlow::Break(())
+        ControlFlow::Break(ControlExit::Stopped)
     })
     .unwrap();
     assert_eq!(calls, 1);
+}
+
+#[test]
+fn failed_break_returns_the_controller_error() {
+    let mut robot = ExRobot::<6>::new();
+    let mut calls = 0;
+    let result = <ExRobot<6> as ControlWith<JointPositionControl<6>>>::control_with_flow(
+        &mut robot,
+        |_, _| {
+            calls += 1;
+            if calls == 1 {
+                ControlFlow::Continue(([0.0; 6], false))
+            } else {
+                ControlFlow::Break(ControlExit::Failed(RobotException::CommandException(
+                    "controller failed".into(),
+                )))
+            }
+        },
+    );
+    assert!(
+        matches!(result, Err(RobotException::CommandException(message)) if message == "controller failed")
+    );
+    assert_eq!(calls, 2);
+}
+
+#[test]
+fn failed_break_ends_an_arm_state_session_too() {
+    let mut robot = ExRobot::<6>::new();
+    let result = <ExRobot<6> as ControlWith<CartesianPoseControl<6>>>::control_with_flow(
+        &mut robot,
+        |_, _| {
+            ControlFlow::Break(ControlExit::Failed(RobotException::CommandException(
+                "no pose".into(),
+            )))
+        },
+    );
+    assert!(
+        matches!(result, Err(RobotException::CommandException(message)) if message == "no pose")
+    );
 }
 
 #[test]
@@ -26,7 +68,7 @@ fn base_break_stops_after_one_valid_cycle() {
         if calls == 1 {
             ControlFlow::Continue(([0.0; 6], false))
         } else {
-            ControlFlow::Break(())
+            ControlFlow::Break(ControlExit::Stopped)
         }
     })
     .unwrap();
@@ -53,7 +95,7 @@ fn async_flow_callback_can_borrow_session_local_state() {
         &mut robot,
         async |_, _| {
             calls += 1;
-            ControlFlow::Break(())
+            ControlFlow::Break(ControlExit::Stopped)
         },
     )
     .unwrap();

@@ -88,7 +88,10 @@ do not enforce a hardware lifecycle. There is no device connection to recover
 or automatically shut down when the value is dropped.
 
 For a callback that should exit **without a command on that iteration**, use
-`ControlWith::control_with_flow` and return `ControlFlow::Break(())`.
+`ControlWith::control_with_flow` and return
+`ControlFlow::Break(ControlExit::Stopped)`; the session then returns `Ok(())`.
+`ControlFlow::Break(ControlExit::Failed(error))` also ends it without a command,
+and the session returns that `error`.
 `ControlFlow::Continue((command, true))` instead completes after its final
 command. The async callback variants still occupy the calling control session;
 they do not launch an independently running controller. A callback must eventually
