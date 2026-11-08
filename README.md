@@ -20,7 +20,7 @@ The joint count is part of the Rust type, so a six-joint arm is `ExRobot<6>`.
 | Example object | Interfaces illustrated |
 |---|---|
 | `ExRobot<N>` | Arm state, joint/flange moves and trajectories, position/velocity/torque callbacks |
-| `ExMobileBase` | Base pose/velocity moves and base control callbacks |
+| `ExMobileBase` | Base pose/velocity moves and base control callbacks (a `VelocityControlledBase`) |
 | `ExQuadruped<N>` | Gait and whole-body/foot targets, joint and base callbacks |
 | `ExHumanoid<N>` | Whole-body, center-of-mass, hand/foot targets and balance callbacks |
 
@@ -110,7 +110,9 @@ spirit: they print commands and synthesize readings. The gripper reaches every
 commanded width at once (and rejects widths outside its stroke), reporting a
 grasp when the command's force is positive. The force/torque sensor reads a
 constant load you can change with `set_load` and supports tare. The IMU is at
-rest and level, reading +9.81 m/s² along z. Readings carry a monotonic-clock
+rest, level and facing east, so its forward-left-up body frame lines up with
+the east-north-up world of `ImuSensor`: it reads the identity orientation and
++9.81 m/s² along +Z. Readings carry a monotonic-clock
 stamp, the frame given to `new`, and a per-device sequence number. Use them to
 exercise code written against the contracts, not to model a device.
 
@@ -120,8 +122,11 @@ Read [capability_showcase.rs](examples/capability_showcase.rs) for complete arm,
 mobile-base, quadruped, and humanoid examples. Use
 [the trait implementations](src/exrobot.rs) as a reference when designing a
 driver, then choose a real backend for device communication or a simulator for
-physical state evolution. The example `stop` and `emergency_stop` methods only
-print; their names do not provide a physical watchdog or emergency stop.
+physical state evolution. The example `stop` methods only print.
+`ExRobot::emergency_stop` prints and then returns an error, because a console
+arm has no stop to latch; the other example robots keep the default
+`emergency_stop`, which calls `stop` and returns the same kind of error. None
+of them provides a physical watchdog or emergency stop.
 
 Optional features demonstrate language bindings:
 

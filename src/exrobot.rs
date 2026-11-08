@@ -5,8 +5,8 @@ use roplat_behavior::{
     FootSpace, GaitCommand, GaitSpace, HandSpace, Humanoid, HumanoidState, JointLimits,
     JointPositionControl, JointSpace, JointState, JointVelocityControl, Joints, LoadState,
     MobileBase, MobileBaseState, MotionLimits, MoveTo, MoveTraj, Pose, Quadruped, QuadrupedState,
-    Robot, RobotDescription, RobotResult, TorqueControl, WholeBodyJointSpace, WholeBodyTorqueSpace,
-    WholeBodyVelocitySpace,
+    Robot, RobotDescription, RobotException, RobotResult, TorqueControl, WholeBodyJointSpace,
+    WholeBodyTorqueSpace, WholeBodyVelocitySpace,
 };
 use std::ops::ControlFlow;
 use std::time::Duration;
@@ -168,9 +168,13 @@ impl<const N: usize> Robot for ExRobot<N> {
         Ok(())
     }
 
+    /// A console arm has no stop to latch, so it prints the call and says so,
+    /// as the contract asks of every device that cannot latch one.
     fn emergency_stop(&mut self) -> RobotResult<()> {
         println!("ExRobot<{N}> emergency_stop");
-        Ok(())
+        Err(RobotException::UnprocessableInstructionError(format!(
+            "ExRobot<{N}> cannot latch an emergency stop; it only printed the call"
+        )))
     }
 
     fn clear_emergency_stop(&mut self) -> RobotResult<()> {

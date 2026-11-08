@@ -110,8 +110,9 @@ impl ForceTorqueSensor for ExForceTorque {
     }
 }
 
-/// An IMU at rest, level: identity orientation, no rotation, and the
-/// specific force of gravity (`+9.81` m/s² along z).
+/// An IMU at rest, level and facing east, so that its forward-left-up body
+/// frame lines up with the east-north-up world: identity orientation, no
+/// rotation, and the specific force of gravity (`+9.81` m/s² along +Z, up).
 pub struct ExImu {
     frame: FrameId,
     seq: u64,
